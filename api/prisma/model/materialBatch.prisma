@@ -1,0 +1,20 @@
+/// 物资批次
+model MaterialBatch {
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  id             String   @id @default(cuid())
+  batchNo        String
+  materialId     String
+  supplierId     String?
+  productionDate DateTime
+  expiryDate     DateTime
+  inboundOrderId String?
+
+  material     Material      @relation(fields: [materialId], references: [id])
+  supplier     Supplier?     @relation(fields: [supplierId], references: [id])
+  inboundOrder InboundOrder? @relation(fields: [inboundOrderId], references: [id])
+  stockItems   StockItem[]
+  alerts       Alert[]
+
+  @@unique([materialId, batchNo])
+}

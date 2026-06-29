@@ -1,0 +1,12 @@
+model SystemSetting {
+  /// @HideField({ input: true })
+  createdAt DateTime @default(now())
+  /// @HideField({ input: true, output: true })
+  updatedAt DateTime @updatedAt
+  /// @Field(() => ID)
+  id        String   @id @default(cuid())
+
+  key   String @unique
+  value Json?
+  type  String @default("json")
+}

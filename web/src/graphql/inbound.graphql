@@ -1,0 +1,39 @@
+query GetInboundOrders($type: String, $status: String, $input: PaginationInput) {
+  getInboundOrders(type: $type, status: $status, input: $input)
+}
+
+query GetInboundOrder($input: IdInput!) {
+  getInboundOrder(input: $input)
+}
+
+mutation CreateInboundOrder($input: CreateInboundInput!) {
+  createInboundOrder(input: $input)
+}
+
+mutation UpdateInboundOrder($input: UpdateInboundInput!) {
+  updateInboundOrder(input: $input)
+}
+
+mutation DelInboundOrder($input: IdInput!) {
+  delInboundOrder(input: $input)
+}
+
+mutation SubmitInboundOrder($input: IdInput!) {
+  submitInboundOrder(input: $input)
+}
+
+mutation ApproveInboundOrder($input: IdInput!) {
+  approveInboundOrder(input: $input)
+}
+
+mutation RejectInboundOrder($input: IdInput!, $reason: String) {
+  rejectInboundOrder(input: $input, reason: $reason)
+}
+
+mutation ReceiveInboundLine($input: ReceiveInboundInput!) {
+  receiveInboundLine(input: $input)
+}
+
+mutation CompleteInboundOrder($input: IdInput!) {
+  completeInboundOrder(input: $input)
+}

@@ -1,0 +1,119 @@
+/* 顶栏全宽；中间导航严格限宽可滚动，避免与右侧用户区重叠 */
+.imes-header {
+  width: 100%;
+}
+
+.imes-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: none;
+  height: 3.5rem;
+  padding: 0 0.75rem;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .imes-header__inner {
+    gap: 0.75rem;
+    padding: 0 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .imes-header__inner {
+    gap: 1rem;
+    padding: 0 1.5rem;
+  }
+}
+
+.imes-header__brand {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.imes-header__nav {
+  /* flex 子项要滚动必须限宽：basis 0 + width 0 + min-width 0 */
+  flex: 1 1 0%;
+  width: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.125rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.imes-header__nav::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1680px) {
+  .imes-header__nav {
+    justify-content: space-evenly;
+    overflow-x: hidden;
+  }
+}
+
+.imes-header__nav-link {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+@media (min-width: 1280px) {
+  .imes-header__nav-link {
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+.imes-header__nav-link svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.imes-header__nav-link--active {
+  background: hsl(var(--primary) / 0.12);
+  font-weight: 500;
+  color: hsl(var(--primary));
+}
+
+.imes-header__nav-link--idle {
+  color: hsl(var(--muted-foreground));
+}
+
+.imes-header__nav-link--idle:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+}
+
+.imes-header__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.125rem;
+  position: relative;
+  z-index: 2;
+  margin-left: 0.125rem;
+  padding-left: 0.375rem;
+  background: var(--leader-nav-bg, hsl(var(--card)));
+}

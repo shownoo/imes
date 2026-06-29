@@ -1,0 +1,39 @@
+/// 采购入库单
+model InboundOrder {
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  id         String        @id @default(cuid())
+  orderNo    String        @unique
+  type       InboundType   @default(PURCHASE)
+  status     InboundStatus @default(DRAFT)
+  supplierId String?
+  contractNo String?
+  remark     String?
+  createdById  String
+  approvedById String?
+  approvedAt   DateTime?
+
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  createdBy  User      @relation("InboundCreator", fields: [createdById], references: [id])
+  approvedBy User?     @relation("InboundApprover", fields: [approvedById], references: [id])
+
+  lines   InboundOrderLine[]
+  batches MaterialBatch[]
+}
+
+/// 入库明细
+model InboundOrderLine {
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  id         String   @id @default(cuid())
+  orderId    String
+  materialId String
+  expectedQty Int
+  actualQty   Int      @default(0)
+  batchNo     String?
+  productionDate DateTime?
+  expiryDate     DateTime?
+
+  order    InboundOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  material Material     @relation(fields: [materialId], references: [id])
+}

@@ -1,0 +1,35 @@
+query GetMaterials($input: PaginationInput) {
+  getMaterials(input: $input)
+}
+
+query GetMaterial($input: IdInput!) {
+  getMaterial(input: $input)
+}
+
+query TraceMaterial($qrCode: String!) {
+  traceMaterial(qrCode: $qrCode)
+}
+
+mutation AddMaterial($input: AddMaterialInput!) {
+  addMaterial(input: $input)
+}
+
+mutation DelMaterial($input: IdInput!) {
+  delMaterial(input: $input)
+}
+
+query GetCategories($input: PaginationInput) {
+  getCategories(input: $input)
+}
+
+mutation AddCategory($input: AddCategoryInput!) {
+  addCategory(input: $input)
+}
+
+query GetSuppliers($input: PaginationInput) {
+  getSuppliers(input: $input)
+}
+
+mutation AddSupplier($input: AddSupplierInput!) {
+  addSupplier(input: $input)
+}

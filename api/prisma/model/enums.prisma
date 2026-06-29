@@ -1,0 +1,66 @@
+/// 库存单元状态
+enum StockStatus {
+  IN_STOCK
+  IN_TRANSIT
+  ISSUED
+  SCRAPPED
+}
+
+/// 入库类型
+enum InboundType {
+  PURCHASE
+  TRANSFER
+  RETURN
+}
+
+/// 入库单状态
+enum InboundStatus {
+  DRAFT
+  PENDING
+  RECEIVING
+  COMPLETED
+  CANCELLED
+}
+
+/// 出库单状态（6状态 + 驳回）
+enum OutboundStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  PICKING
+  SHIPPED
+  COMPLETED
+  REJECTED
+}
+
+/// 库存变动类型
+enum MovementType {
+  INBOUND
+  OUTBOUND
+  SPLIT
+  TRANSFER
+  ADJUST
+  SCRAP
+}
+
+/// 预警类型
+enum AlertType {
+  EXPIRY
+  LOW_STOCK
+  HIGH_STOCK
+}
+
+/// 预警级别（效期红绿灯）
+enum AlertLevel {
+  GREEN
+  YELLOW
+  RED
+}
+
+/// 库区类型
+enum ZoneType {
+  RESCUE
+  DISASTER
+  GENERAL
+  TEMPERATURE
+}

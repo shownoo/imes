@@ -1,0 +1,103 @@
+/**
+ * 领导端皮肤 → 页面字体 / KPI / 面板（对齐 neoWebSchool leader-page-skin.css）
+ */
+
+body[data-leader-skin],
+[data-cheta-layout] {
+  font-family: var(--leader-font-body, inherit);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--leader-text, inherit);
+}
+
+body[data-leader-skin] {
+  background: var(--leader-page-bg, var(--cheta-page-bg-light, hsl(var(--background))));
+}
+
+[data-cheta-layout] .cheta-leader-panel,
+.leader-panel-card,
+.overview-card.leader-kpi-card {
+  border-radius: var(--cheta-card-radius, var(--leader-card-radius, 16px));
+}
+
+[data-cheta-layout] .cheta-leader-panel,
+.leader-panel-card {
+  background: var(--leader-card-bg) !important;
+  border: 1px solid var(--leader-card-border, var(--cheta-card-border-strong, hsl(var(--border)))) !important;
+}
+
+.overview-card {
+  will-change: transform, box-shadow;
+}
+
+[data-cheta-layout] [data-leader-kpi-value],
+.leader-kpi-card [data-leader-kpi-value],
+.leader-kpi-card-compact [data-leader-kpi-value] {
+  font-family: var(--leader-font-number, var(--leader-font-body));
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.02em;
+  font-size: var(--leader-kpi-value-size, clamp(1.4rem, 2.15vw, 1.75rem));
+  font-weight: var(--cheta-kpi-weight, 700);
+  transform: scale(var(--cheta-kpi-scale, 1));
+  transform-origin: left center;
+  color: var(--leader-text, inherit);
+}
+
+.leader-kpi-card .leader-kpi-label,
+[data-leader-kpi-label] {
+  font-size: var(--leader-kpi-label-size, 0.8125rem);
+  color: var(--leader-text-muted, inherit);
+  font-family: var(--leader-font-body, inherit);
+}
+
+body[data-leader-skin] [data-cheta-layout] .text-muted-foreground {
+  color: var(--leader-text-muted) !important;
+}
+
+.leader-kpi-card-compact {
+  min-height: 0;
+}
+
+.leader-overview-kpi-grid > * {
+  min-width: 0;
+}
+
+[data-v6-overview-theme='deep-purple'] .leader-overview-kpi-grid > * {
+  backdrop-filter: blur(20px) saturate(1.05);
+}
+
+body[data-cheta-visual='institutional'] .leader-kpi-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--leader-accent, hsl(var(--primary)));
+  border-radius: 3px 0 0 3px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+body[data-cheta-visual='minimal'] .leader-panel-card,
+body[data-cheta-visual='minimal'] .overview-card {
+  box-shadow: none !important;
+}
+
+body[data-cheta-visual='minimal'] .overview-card:hover {
+  transform: none !important;
+}
+
+[data-cheta-layout] .leader-page-toolbar {
+  border-bottom: 1px solid var(--leader-card-border, var(--cheta-card-border-strong, hsl(var(--border))));
+}
+
+[data-cheta-layout] .leader-form-grid {
+  gap: var(--leader-grid-gap, 16px);
+}
+
+body[data-v6-overview-theme='hermes-blue'] .leader-panel-card {
+  backdrop-filter: saturate(200%) blur(28px);
+  -webkit-backdrop-filter: saturate(200%) blur(28px);
+}

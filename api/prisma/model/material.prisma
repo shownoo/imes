@@ -1,0 +1,24 @@
+/// 物资档案（一品一码基础信息）
+model Material {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  spec      String?
+  model     String?
+  unit      String   @default("件")
+  manufacturer String?
+  categoryId   String
+  supplierId   String?
+
+  category MaterialCategory @relation(fields: [categoryId], references: [id])
+  supplier Supplier?        @relation(fields: [supplierId], references: [id])
+
+  batches           MaterialBatch[]
+  stockItems        StockItem[]
+  inboundLines      InboundOrderLine[]
+  outboundLines     OutboundOrderLine[]
+  alerts            Alert[]
+  images            MaterialImage[]
+}

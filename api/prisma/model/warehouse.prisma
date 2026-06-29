@@ -1,0 +1,13 @@
+/// 库区
+model Warehouse {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  zone      ZoneType @default(GENERAL)
+  area      Float?
+  capacity  Int?
+
+  shelves Shelf[]
+}

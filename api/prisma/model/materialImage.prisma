@@ -1,0 +1,14 @@
+/// 物资图片（多图关联）
+model MaterialImage {
+  createdAt  DateTime @default(now())
+  id         String   @id @default(cuid())
+  materialId String
+  fileId     String
+  sortOrder  Int      @default(0)
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  file     FileItem @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@unique([materialId, fileId])
+  @@index([materialId, sortOrder])
+}

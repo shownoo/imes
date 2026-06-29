@@ -1,0 +1,17 @@
+/// 货架/货位
+model Shelf {
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  zone        String
+  row         String?
+  level       Int?
+  capacity    Int?
+  warehouseId String
+  qrCode      String?  @unique
+
+  warehouse  Warehouse   @relation(fields: [warehouseId], references: [id])
+  stockItems StockItem[]
+}

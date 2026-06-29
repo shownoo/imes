@@ -1,0 +1,15 @@
+/// 物资大类
+model MaterialCategory {
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  zone            ZoneType @default(GENERAL)
+  shelfLifeMonths Int      @default(60)
+  safetyStockMin  Int      @default(0)
+  safetyStockMax  Int?
+  description     String?
+
+  materials Material[]
+}

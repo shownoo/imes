@@ -1,0 +1,16 @@
+/// 供应商
+model Supplier {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  contact   String?
+  phone     String?
+  address   String?
+  license   String?
+
+  materials      Material[]
+  inboundOrders  InboundOrder[]
+  materialBatches MaterialBatch[]
+}

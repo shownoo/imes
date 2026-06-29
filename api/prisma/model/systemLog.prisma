@@ -1,0 +1,53 @@
+/// 日志模块
+enum LogModule {
+  AUTH
+  USER
+  ROLE
+  MATERIAL
+  CATEGORY
+  SUPPLIER
+  WAREHOUSE
+  INBOUND
+  OUTBOUND
+  STOCK
+  ALERT
+}
+
+/// 操作类型
+enum LogAction {
+  LOGIN
+  CREATE
+  UPDATE
+  DELETE
+  SUBMIT
+  APPROVE
+  REJECT
+  RECEIVE
+  SHELVE
+  COMPLETE
+  PICK
+  SHIP
+  SYNC
+  RESOLVE
+}
+
+/// 系统操作日志
+model SystemLog {
+  createdAt   DateTime  @default(now())
+  id          String    @id @default(cuid())
+  userId      String
+  action      LogAction
+  module      LogModule
+  summary     String
+  targetId    String?
+  targetLabel String?
+  detail      Json?
+  ipAddress   String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([createdAt(sort: Desc)])
+  @@index([module])
+  @@index([action])
+  @@index([userId])
+}

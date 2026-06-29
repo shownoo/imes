@@ -1,0 +1,24 @@
+/// 系统用户
+model User {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String?
+  roleId    String
+  phone     String?
+  email     String?
+  active    Boolean  @default(true)
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  inboundOrdersCreated  InboundOrder[]  @relation("InboundCreator")
+  inboundOrdersApproved InboundOrder[]  @relation("InboundApprover")
+  outboundOrdersCreated OutboundOrder[] @relation("OutboundCreator")
+  outboundOrdersApproved OutboundOrder[] @relation("OutboundApprover")
+  stockMovements        StockMovement[]
+  alertsResolved        Alert[]         @relation("AlertResolver")
+  systemLogs            SystemLog[]
+  approvalTasksActed    ApprovalTask[] @relation("ApprovalTaskActor")
+}

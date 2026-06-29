@@ -1,0 +1,75 @@
+/// 审批流程定义
+model ApprovalFlow {
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  id          String   @id @default(cuid())
+  bizType     String   @unique
+  name        String
+  description String?
+  /// React Flow 图：{ nodes, edges }
+  graph       Json
+  active      Boolean  @default(true)
+
+  instances ApprovalInstance[]
+}
+
+/// 审批流程实例（挂在业务单据上）
+model ApprovalInstance {
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  id          String                 @id @default(cuid())
+  flowId      String
+  bizType     String
+  bizId       String
+  currentNode String?
+  status      ApprovalInstanceStatus @default(RUNNING)
+
+  flow  ApprovalFlow   @relation(fields: [flowId], references: [id])
+  tasks ApprovalTask[]
+
+  @@unique([bizType, bizId])
+  @@index([status])
+}
+
+/// 审批待办任务
+model ApprovalTask {
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  id           String             @id @default(cuid())
+  instanceId   String
+  nodeId       String
+  nodeLabel    String?
+  assigneeRole String?
+  assigneeId   String?
+  status       ApprovalTaskStatus @default(PENDING)
+  action       String?
+  comment      String?
+  actedAt      DateTime?
+  actedById    String?
+  /// 超时截止（根据节点 timeoutHours 计算）
+  dueAt        DateTime?
+  /// 已催办次数
+  remindCount  Int                @default(0)
+  /// 上次催办时间
+  lastRemindedAt DateTime?
+
+  instance ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  actedBy  User?            @relation("ApprovalTaskActor", fields: [actedById], references: [id])
+
+  @@index([instanceId, status])
+  @@index([assigneeRole, status])
+}
+
+enum ApprovalInstanceStatus {
+  RUNNING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ApprovalTaskStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}

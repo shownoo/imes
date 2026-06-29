@@ -1,0 +1,9 @@
+{
+  "app": {
+    "inputs": [
+      "./prisma/db/db.prisma",
+      "./prisma/model/*.prisma"
+    ],
+    "output": "prisma/schema.prisma"
+  }
+}

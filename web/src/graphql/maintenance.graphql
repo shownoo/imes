@@ -1,0 +1,15 @@
+mutation DelCategory($input: IdInput!) {
+  delCategory(input: $input)
+}
+
+mutation DelSupplier($input: IdInput!) {
+  delSupplier(input: $input)
+}
+
+mutation DelWarehouse($input: IdInput!) {
+  delWarehouse(input: $input)
+}
+
+mutation DelShelf($input: IdInput!) {
+  delShelf(input: $input)
+}

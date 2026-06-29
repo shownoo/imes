@@ -1,0 +1,48 @@
+query UploadCapability {
+  uploadCapability {
+    enabled
+    provider
+    maxImageMB
+    maxFileMB
+    reason
+    cosBucket
+    cosRegion
+    storageBucket
+    storageRegion
+    canFallbackLocal
+  }
+}
+
+query CheckFileDuplicate($input: CheckFileDuplicateInput!) {
+  checkFileDuplicate(input: $input)
+}
+
+query FileItems($input: FileItemsInput!) {
+  fileItems(input: $input) {
+    id
+    name
+    size
+    key
+    url
+    storageType
+    mimeType
+    md5
+  }
+}
+
+mutation RegisterFile($input: RegisterFileInput!) {
+  registerFile(input: $input) {
+    id
+    name
+    size
+    key
+    url
+    storageType
+    mimeType
+    md5
+  }
+}
+
+mutation DeleteFileItems($input: DeleteFileItemsInput!) {
+  deleteFileItems(input: $input)
+}

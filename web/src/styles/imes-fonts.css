@@ -1,0 +1,62 @@
+/**
+ * IMES 全站字体 — HarmonyOS Sans SC（正文/标题）· D-DIN（数字）
+ * 栈定义与 lib/leader-fonts.ts 保持一致
+ */
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/irozhi/HarmonyOS-Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/irozhi/HarmonyOS-Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Medium.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/irozhi/HarmonyOS-Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'D-DIN';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/wordshub/free-font/D-DIN/D-DIN.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'D-DIN';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/wordshub/free-font/D-DIN/D-DIN-Bold.ttf') format('truetype');
+}
+
+:root {
+  --leader-font-body: 'HarmonyOS Sans SC', 'HarmonyOS Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --leader-font-number: 'D-DIN', 'DIN Alternate', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+    'Helvetica Neue', sans-serif;
+}
+
+[data-leader-kpi-value],
+.font-number {
+  font-family: var(--leader-font-number);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.02em;
+}

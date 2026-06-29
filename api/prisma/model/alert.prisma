@@ -1,0 +1,18 @@
+/// 智能预警
+model Alert {
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  type       AlertType
+  level      AlertLevel
+  materialId String?
+  batchId    String?
+  message    String
+  resolved   Boolean    @default(false)
+  resolvedAt DateTime?
+  resolvedById String?
+
+  material   Material?      @relation(fields: [materialId], references: [id])
+  batch      MaterialBatch? @relation(fields: [batchId], references: [id])
+  resolvedBy User?          @relation("AlertResolver", fields: [resolvedById], references: [id])
+}

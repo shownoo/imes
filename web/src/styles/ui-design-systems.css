@@ -1,0 +1,282 @@
+/**
+ * 设计语言全站材质 — 由 body[data-ui-design-system] 驱动
+ * 与 ui-design-catalog 中 Material 3 / Apple HIG / Fluent 2 / Carbon 等一一对应
+ */
+
+/* ── 表单控件：圆角 / 底色 / 边框（全设计语言共用选择器） ── */
+[data-cheta-layout] .leader-form-surface input:not([type='checkbox']):not([type='radio']),
+[data-cheta-layout] .leader-form-surface textarea,
+[data-cheta-layout] .leader-form-surface button[role='combobox'] {
+  border-radius: var(--ui-ds-input-radius, 8px);
+  background: var(--ui-ds-form-input-bg, hsl(var(--background)));
+  border-color: var(--ui-ds-form-input-border, hsl(var(--border)));
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+[data-cheta-layout] .leader-page-actions .bg-primary,
+[data-cheta-layout] .leader-page-actions button.bg-primary {
+  border-radius: var(--ui-ds-button-radius, 8px);
+  box-shadow: var(--ui-ds-primary-btn-shadow, none);
+}
+
+[data-cheta-layout] .leader-page-actions .border-input {
+  border-radius: var(--ui-ds-button-radius, 8px);
+}
+
+/* ══════════════════════════════════════
+   Material 3 · 表面容器分层 · 药丸按钮
+   ══════════════════════════════════════ */
+body[data-ui-design-system='material-3'] .overview-card.leader-panel-card,
+body[data-ui-design-system='material-3'] .leader-panel-card.overview-card {
+  box-shadow: var(--cheta-surface-shadow, 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 6px 2px rgba(0, 0, 0, 0.04));
+}
+
+body[data-ui-design-system='material-3'] .ui-ds-layered-card {
+  position: relative;
+  overflow: hidden;
+}
+
+body[data-ui-design-system='material-3'] .ui-ds-layered-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--leader-accent) 5%, transparent) 0%,
+    transparent 42%
+  );
+  z-index: 0;
+}
+
+body[data-ui-design-system='material-3'] .ui-ds-layered-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-form-surface input:focus-visible,
+body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-form-surface textarea:focus-visible,
+body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  border-color: var(--leader-accent, hsl(var(--primary)));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 22%, transparent);
+  outline: none;
+}
+
+body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-page-actions .bg-primary {
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+body[data-ui-design-system='material-3'] .leader-kpi-card::before {
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+  background: color-mix(in srgb, var(--leader-accent) 85%, #fff);
+}
+
+/* ══════════════════════════════════════
+   Apple HIG · 毛玻璃 · liquid glass
+   ══════════════════════════════════════ */
+body[data-ui-design-system='apple-hig'] .leader-panel-card,
+body[data-ui-design-system='apple-hig'] .overview-card.leader-panel-card {
+  backdrop-filter: var(--leader-card-backdrop, blur(28px) saturate(190%));
+  -webkit-backdrop-filter: var(--leader-card-backdrop, blur(28px) saturate(190%));
+}
+
+body[data-ui-design-system='apple-hig'] .overview-card.leader-form-card,
+body[data-ui-design-system='apple-hig'] .leader-kpi-card.overview-card {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 14px 42px -24px rgba(15, 23, 42, 0.14),
+    var(--cheta-surface-shadow, var(--leader-card-shadow));
+}
+
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] .overview-card.leader-form-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0.06) 42%,
+    rgba(10, 132, 255, 0.05) 100%
+  );
+}
+
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface input:not([type='checkbox']):not([type='radio']),
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface textarea,
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface button[role='combobox'] {
+  backdrop-filter: blur(12px) saturate(1.25);
+  -webkit-backdrop-filter: blur(12px) saturate(1.25);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+}
+
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] [data-cheta-layout] .leader-form-surface input:not([type='checkbox']):not([type='radio']),
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] [data-cheta-layout] .leader-form-surface textarea,
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] [data-cheta-layout] .leader-form-surface button[role='combobox'] {
+  background: rgba(255, 255, 255, 0.42);
+  border-color: rgba(255, 255, 255, 0.58);
+}
+
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface input:focus-visible,
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface textarea:focus-visible,
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  border-color: color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 42%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 16%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.75) inset;
+}
+
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-page-actions .border-input {
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  background: color-mix(in srgb, #fff 70%, transparent);
+}
+
+body[data-ui-design-system='apple-hig'] .leader-nav {
+  backdrop-filter: blur(22px) saturate(190%);
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+}
+
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] .leader-nav {
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 8px 32px rgba(15, 23, 42, 0.06);
+}
+
+/* ══════════════════════════════════════
+   Fluent 2 · 通信蓝 · 微 Reveal
+   ══════════════════════════════════════ */
+body[data-ui-design-system='fluent-2'] .overview-card.leader-panel-card {
+  box-shadow: var(--cheta-surface-shadow);
+  border-bottom: 2px solid color-mix(in srgb, var(--leader-accent) 12%, transparent);
+}
+
+body[data-ui-design-system='fluent-2'] .leader-nav {
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+body[data-ui-design-system='fluent-2'] [data-cheta-layout] .leader-form-surface input:focus-visible,
+body[data-ui-design-system='fluent-2'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  border-color: var(--leader-accent, #0078d4);
+  box-shadow: inset 0 -2px 0 0 var(--leader-accent, #0078d4);
+  outline: none;
+}
+
+body[data-ui-design-system='fluent-2'] [data-cheta-layout] .leader-page-actions .bg-primary {
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════
+   IBM Carbon · 直角 · 1px · 无阴影
+   ══════════════════════════════════════ */
+body[data-ui-design-system='ibm-carbon'] .overview-card,
+body[data-ui-design-system='ibm-carbon'] .leader-panel-card {
+  box-shadow: none !important;
+  border-width: 1px;
+  border-style: solid;
+}
+
+body[data-ui-design-system='ibm-carbon'] .overview-card:hover {
+  transform: none !important;
+}
+
+body[data-ui-design-system='ibm-carbon'] [data-cheta-layout] .leader-form-surface input,
+body[data-ui-design-system='ibm-carbon'] [data-cheta-layout] .leader-form-surface button[role='combobox'] {
+  border-width: 1px;
+  border-bottom-width: 1px;
+  box-shadow: none;
+}
+
+body[data-ui-design-system='ibm-carbon'] [data-cheta-layout] .leader-form-surface input:focus-visible,
+body[data-ui-design-system='ibm-carbon'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  outline: 2px solid var(--leader-accent, #0f62fe);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+body[data-ui-design-system='ibm-carbon'] .leader-kpi-card::before {
+  width: 3px;
+  border-radius: 0;
+}
+
+/* ══════════════════════════════════════
+   政务规范 · 稳重边框
+   ══════════════════════════════════════ */
+body[data-ui-design-system='gov-standard'] .leader-panel-card {
+  border-width: 1px;
+  box-shadow: var(--cheta-surface-shadow);
+}
+
+body[data-ui-design-system='gov-standard'] .leader-kpi-card::before {
+  width: 4px;
+}
+
+/* ══════════════════════════════════════
+   Linear Pro · 紫蓝微光
+   ══════════════════════════════════════ */
+body[data-ui-design-system='linear-pro'] .overview-card.leader-panel-card {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--leader-accent) 14%, transparent),
+    var(--cheta-surface-shadow, 0 8px 24px rgba(99, 102, 241, 0.12));
+}
+
+body[data-ui-design-system='linear-pro'] [data-cheta-layout] .leader-form-surface input:focus-visible,
+body[data-ui-design-system='linear-pro'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--leader-accent) 20%, transparent);
+  outline: none;
+}
+
+/* ══════════════════════════════════════
+   Geist Dark · 线框微光
+   ══════════════════════════════════════ */
+body[data-ui-design-system='geist-dark'] .overview-card.leader-panel-card {
+  box-shadow: var(--cheta-surface-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body[data-ui-design-system='geist-dark'] [data-cheta-layout] .leader-form-surface input:focus-visible,
+body[data-ui-design-system='geist-dark'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--leader-accent) 55%, transparent),
+    0 0 20px color-mix(in srgb, var(--leader-accent) 18%, transparent);
+  outline: none;
+}
+
+/* ══════════════════════════════════════
+   Stripe Dashboard · 金融科技 elevation
+   ══════════════════════════════════════ */
+body[data-ui-design-system='stripe-dashboard'] .overview-card.leader-panel-card {
+  box-shadow: var(--cheta-surface-shadow);
+}
+
+body[data-ui-design-system='stripe-dashboard'] [data-cheta-layout] .leader-page-actions .bg-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--leader-accent) 92%, #fff) 0%, var(--leader-accent) 100%);
+}
+
+/* ══════════════════════════════════════
+   Figma UI3 · 大圆角 · 轻阴影
+   ══════════════════════════════════════ */
+body[data-ui-design-system='figma-ui3'] .overview-card.leader-panel-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+body[data-ui-design-system='figma-ui3'] [data-cheta-layout] .leader-form-surface input,
+body[data-ui-design-system='figma-ui3'] [data-cheta-layout] .leader-form-surface button[role='combobox'] {
+  border-color: #e5e5e5;
+}
+
+body[data-ui-design-system='figma-ui3'] .overview-card:hover {
+  transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════
+   现代行政 · 中性 Fluent 式
+   ══════════════════════════════════════ */
+body[data-ui-design-system='modern-admin'] .overview-card.leader-panel-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

@@ -1,0 +1,47 @@
+query GetOutboundOrders($status: String, $input: PaginationInput) {
+  getOutboundOrders(status: $status, input: $input)
+}
+
+query GetOutboundOrder($input: IdInput!) {
+  getOutboundOrder(input: $input)
+}
+
+query GetPickSuggestions($materialId: ID!, $qty: Int!) {
+  getPickSuggestions(materialId: $materialId, qty: $qty)
+}
+
+mutation CreateOutboundOrder($input: CreateOutboundInput!) {
+  createOutboundOrder(input: $input)
+}
+
+mutation UpdateOutboundOrder($input: UpdateOutboundInput!) {
+  updateOutboundOrder(input: $input)
+}
+
+mutation DelOutboundOrder($input: IdInput!) {
+  delOutboundOrder(input: $input)
+}
+
+mutation SubmitOutboundOrder($input: IdInput!) {
+  submitOutboundOrder(input: $input)
+}
+
+mutation ApproveOutboundOrder($input: IdInput!, $approved: Boolean!, $rejectReason: String) {
+  approveOutboundOrder(input: $input, approved: $approved, rejectReason: $rejectReason)
+}
+
+mutation StartPicking($input: IdInput!) {
+  startPicking(input: $input)
+}
+
+mutation PickOutboundLine($input: PickStockInput!) {
+  pickOutboundLine(input: $input)
+}
+
+mutation ShipOutboundOrder($input: IdInput!) {
+  shipOutboundOrder(input: $input)
+}
+
+mutation CompleteOutboundOrder($input: IdInput!) {
+  completeOutboundOrder(input: $input)
+}

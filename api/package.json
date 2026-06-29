@@ -1,0 +1,48 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma:g": "prismerge -i prismerge.json && prisma format && prisma generate",
+    "postinstall": "prismerge -i prismerge.json && prisma generate",
+    "db:seed": "prisma db seed",
+    "db:push": "prisma db push",
+    "db:migrate-rbac": "tsx prisma/migrate-rbac.ts"
+  },
+  "prisma": {
+    "seed": "pnpm exec tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@graphql-yoga/plugin-disable-introspection": "^2.19.1",
+    "@hono/node-server": "^1.19.11",
+    "@pothos/core": "^4.12.0",
+    "@pothos/plugin-prisma": "^4.14.2",
+    "@pothos/plugin-scope-auth": "^4.1.6",
+    "@prisma/client": "^6.7.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.3.1",
+    "graphql": "^16.11.0",
+    "graphql-scalars": "^1.24.0",
+    "graphql-yoga": "^5.13.2",
+    "hono": "^4.12.5",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^9.0.1",
+    "prisma": "^6.7.0",
+    "qcloud-cos-sts": "^3.1.3",
+    "ramda": "^0.30.1",
+    "tsx": "^4.19.4"
+  },
+  "devDependencies": {
+    "@prisma-utils/prismerge": "^1.7.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.0",
+    "@types/nodemailer": "^8.0.1",
+    "@types/ramda": "^0.30.2",
+    "typescript": "^5.8.3"
+  }
+}

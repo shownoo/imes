@@ -1,0 +1,36 @@
+model FileItem {
+  /// @HideField({ input: true, output: true })
+  createdAt DateTime @default(now())
+  /// @HideField({ input: true, output: true })
+  updatedAt DateTime @updatedAt
+  /// @Field(() => ID)
+  id        String   @id @default(cuid())
+
+  name String
+  size Int
+  key  String @unique
+
+  storageType StorageType
+  area        StorageArea
+
+  md5      String
+  mimeType String?
+
+  materialImages MaterialImage[]
+
+  @@index([md5])
+}
+
+enum StorageType {
+  SELF
+  COS
+  QINIU
+  OSS
+  S3
+  MINIO
+}
+
+enum StorageArea {
+  NORMAL
+  SAFE
+}

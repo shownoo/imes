@@ -1,0 +1,15 @@
+query Dashboard {
+  dashboard
+}
+
+query GetAlerts($resolved: Boolean, $take: Int) {
+  getAlerts(resolved: $resolved, take: $take)
+}
+
+mutation SyncAlerts {
+  syncAlerts
+}
+
+mutation ResolveAlert($id: ID!) {
+  resolveAlert(id: $id)
+}

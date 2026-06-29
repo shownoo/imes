@@ -1,0 +1,40 @@
+/// 系统角色
+model Role {
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  /// 内置角色不可删除
+  system      Boolean  @default(false)
+  sort        Int      @default(0)
+
+  users       User[]
+  permissions RolePermission[]
+}
+
+/// 权限点（模块:操作）
+model Permission {
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  module      String
+  action      String
+  description String?
+
+  roles RolePermission[]
+}
+
+/// 角色-权限关联
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}

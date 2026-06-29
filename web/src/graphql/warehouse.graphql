@@ -1,0 +1,15 @@
+query GetWarehouses {
+  getWarehouses
+}
+
+query GetShelves($warehouseId: ID, $input: PaginationInput) {
+  getShelves(warehouseId: $warehouseId, input: $input)
+}
+
+mutation AddWarehouse($input: AddWarehouseInput!) {
+  addWarehouse(input: $input)
+}
+
+mutation AddShelf($input: AddShelfInput!) {
+  addShelf(input: $input)
+}

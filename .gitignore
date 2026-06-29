@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+.pylibs/
+.pnpm-store/
+api/prisma/schema.prisma
+uploads/
+api/uploads/

@@ -1,0 +1,37 @@
+/// 物资出库单
+model OutboundOrder {
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  id          String         @id @default(cuid())
+  orderNo     String         @unique
+  status      OutboundStatus @default(DRAFT)
+  purpose     String?
+  destination String?
+  recipient   String?
+  rejectReason String?
+  createdById  String
+  approvedById String?
+  approvedAt   DateTime?
+  completedAt  DateTime?
+
+  createdBy  User  @relation("OutboundCreator", fields: [createdById], references: [id])
+  approvedBy User? @relation("OutboundApprover", fields: [approvedById], references: [id])
+
+  lines OutboundOrderLine[]
+}
+
+/// 出库明细
+model OutboundOrderLine {
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  id           String   @id @default(cuid())
+  orderId      String
+  materialId   String
+  requestedQty Int
+  pickedQty    Int      @default(0)
+  stockItemId  String?
+
+  order     OutboundOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  material  Material      @relation(fields: [materialId], references: [id])
+  stockItem StockItem?    @relation(fields: [stockItemId], references: [id])
+}

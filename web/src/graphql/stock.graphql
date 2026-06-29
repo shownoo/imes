@@ -1,0 +1,11 @@
+query GetStockItems($status: String, $materialId: ID, $input: PaginationInput) {
+  getStockItems(status: $status, materialId: $materialId, input: $input)
+}
+
+query GetInventorySummary {
+  getInventorySummary
+}
+
+query GetMovements($stockItemId: ID, $type: String, $input: PaginationInput) {
+  getMovements(stockItemId: $stockItemId, type: $type, input: $input)
+}

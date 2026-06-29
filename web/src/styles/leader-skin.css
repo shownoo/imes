@@ -1,0 +1,46 @@
+/* 领导端工作空间 — 卡片 / 导航 / KPI 左条 */
+
+.leader-nav {
+  background: var(--leader-nav-bg, var(--cheta-light-nav-bg, hsl(var(--card))));
+  border-color: var(--leader-card-border, var(--cheta-light-nav-border, hsl(var(--border))));
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.leader-kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.leader-kpi-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--leader-accent, hsl(var(--primary)));
+  border-radius: 3px 0 0 3px;
+}
+
+body[data-cheta-visual='minimal'] .leader-kpi-card::before {
+  width: 2px;
+}
+
+body[data-cheta-visual='institutional'] .leader-kpi-card::before {
+  width: 4px;
+}
+
+.leader-workspace-grid {
+  gap: var(--leader-grid-gap, 16px);
+}
+
+.leader-content-wrap {
+  max-width: var(--leader-content-max, var(--cheta-page-content-max, 1440px));
+}
+
+body[data-cheta-nav-pattern='block'] .leader-nav a.bg-primary\/15,
+body[data-cheta-nav-pattern='block'] .leader-nav a[class*='text-primary'] {
+  background: var(--cheta-nav-accent, hsl(var(--primary))) !important;
+  color: #fff !important;
+}

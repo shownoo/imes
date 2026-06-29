@@ -1,0 +1,23 @@
+/// 库存单元（一品一码，支持拆零）
+model StockItem {
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  id         String      @id @default(cuid())
+  qrCode     String      @unique
+  materialId String
+  batchId    String
+  shelfId    String?
+  quantity   Int
+  status     StockStatus @default(IN_STOCK)
+  parentId   String?
+  splitFrom  String?
+
+  material Material      @relation(fields: [materialId], references: [id])
+  batch    MaterialBatch @relation(fields: [batchId], references: [id])
+  shelf    Shelf?        @relation(fields: [shelfId], references: [id])
+  parent   StockItem?    @relation("StockSplit", fields: [parentId], references: [id])
+  children StockItem[]   @relation("StockSplit")
+
+  movements     StockMovement[]
+  outboundLines OutboundOrderLine[]
+}

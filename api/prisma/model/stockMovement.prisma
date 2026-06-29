@@ -1,0 +1,19 @@
+/// 库存变动记录（全链路追溯）
+model StockMovement {
+  createdAt   DateTime     @default(now())
+  id          String       @id @default(cuid())
+  type        MovementType
+  stockItemId String
+  quantity    Int
+  beforeQty   Int?
+  afterQty    Int?
+  fromShelfId String?
+  toShelfId   String?
+  operatorId  String
+  refType     String?
+  refId       String?
+  note        String?
+
+  stockItem StockItem @relation(fields: [stockItemId], references: [id])
+  operator  User      @relation(fields: [operatorId], references: [id])
+}
