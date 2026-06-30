@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
-import { FormPage, FormField, FormGrid } from 'components/form-page'
-import { Button } from 'components/common'
+import {
+  FormPage,
+  FormSection,
+  FormStack,
+  InsetFormGroup,
+  InsetFormRow,
+  insetFormInputClass,
+  insetFormSelectTriggerClass,
+} from 'components/form-page'
+import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { GET_CATEGORIES, ADD_CATEGORY, ZONE_OPTIONS } from './queries'
@@ -57,29 +65,45 @@ export default function CategoryForm() {
 
   return (
     <FormPage
-      title={isEdit ? '编辑物资大类' : '新增物资大类'}
+      mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=categories"
       backLabel='物资大类'
       footer={
-        <>
-          <Button variant="outline" onClick={() => navigate('/materials?tab=categories')}>取消'</Button>
-          <Button onClick={handleSave} disabled={saving}>保存</Button>
-        </>
+        <FormProcessButtons
+          onCancel={() => navigate('/materials?tab=categories')}
+          onSubmit={handleSave}
+          loading={saving}
+          submitTitle="保存"
+        />
       }
     >
-      <FormGrid>
-        <FormField label='大类编码' required><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></FormField>
-        <FormField label='大类名称' required><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></FormField>
-        <FormField label='库区类型'>
-          <Select value={form.zone} onValueChange={(v) => setForm({ ...form, zone: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{ZONE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </FormField>
-        <FormField label='保质期(月)'><Input type="number" value={String(form.shelfLifeMonths)} onChange={(e) => setForm({ ...form, shelfLifeMonths: Number(e.target.value) })} /></FormField>
-        <FormField label='安全库存下限'><Input type="number" value={String(form.safetyStockMin)} onChange={(e) => setForm({ ...form, safetyStockMin: Number(e.target.value) })} /></FormField>
-        <FormField label='安全库存上限'><Input type="number" value={String(form.safetyStockMax)} onChange={(e) => setForm({ ...form, safetyStockMax: e.target.value === '' ? '' : Number(e.target.value) })} /></FormField>
-      </FormGrid>
+      <FormStack>
+        <FormSection title="大类信息" desc="编码、库区、效期与安全库存" inset>
+          <InsetFormGroup>
+            <InsetFormRow label='大类编码' required>
+              <Input className={insetFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='大类名称' required>
+              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='库区类型'>
+              <Select value={form.zone} onValueChange={(v) => setForm({ ...form, zone: v })}>
+                <SelectTrigger className={insetFormSelectTriggerClass}><SelectValue /></SelectTrigger>
+                <SelectContent>{ZONE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </InsetFormRow>
+            <InsetFormRow label='保质期(月)'>
+              <Input type="number" className={insetFormInputClass} value={String(form.shelfLifeMonths)} onChange={(e) => setForm({ ...form, shelfLifeMonths: Number(e.target.value) })} />
+            </InsetFormRow>
+            <InsetFormRow label='安全库存下限'>
+              <Input type="number" className={insetFormInputClass} value={String(form.safetyStockMin)} onChange={(e) => setForm({ ...form, safetyStockMin: Number(e.target.value) })} />
+            </InsetFormRow>
+            <InsetFormRow label='安全库存上限'>
+              <Input type="number" className={insetFormInputClass} value={String(form.safetyStockMax)} onChange={(e) => setForm({ ...form, safetyStockMax: e.target.value === '' ? '' : Number(e.target.value) })} />
+            </InsetFormRow>
+          </InsetFormGroup>
+        </FormSection>
+      </FormStack>
     </FormPage>
   )
 }

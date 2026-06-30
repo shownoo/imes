@@ -5,7 +5,7 @@ import { useWorkspace } from 'contexts/workspace-context'
 import { LeaderKpiGrid } from 'components/leader-kpi-grid'
 import { LeaderPageHeader } from 'components/leader-page-header'
 import { LeaderPanelCard } from 'components/leader-panel-card'
-import { ZoneHeatmap, StockWaterLevel, ExpiryHealthPanel, Badge, DataTable, Button } from 'components/common'
+import { ZoneHeatmap, StockWaterLevel, ExpiryHealthPanel, Badge, DataTable, Button, ToolbarButton } from 'components/common'
 import { formatNumber, formatDate, STATUS_LABELS, statusBadgeVariant } from 'lib/utils'
 import type { WorkspaceWidgetId } from 'lib/workspace-theme'
 import type { ApprovalInboxItem } from 'lib/approval-flow'
@@ -230,10 +230,14 @@ export default function Dashboard() {
         desc="应急物资仓储运营一屏统览 · 账号菜单可自定义界面与布局"
         action={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => d && exportDashboard(d)}>
-              <Download className="size-4" />导出</Button>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="size-4" />刷新</Button>
+            <ToolbarButton onClick={() => d && exportDashboard(d)}>
+              <Download className="size-3.5" />
+              导出
+            </ToolbarButton>
+            <ToolbarButton onClick={() => refetch()}>
+              <RefreshCw className="size-3.5" />
+              刷新
+            </ToolbarButton>
           </div>
         }
       />

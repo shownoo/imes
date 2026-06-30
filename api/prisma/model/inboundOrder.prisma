@@ -6,6 +6,7 @@ model InboundOrder {
   orderNo    String        @unique
   type       InboundType   @default(PURCHASE)
   status     InboundStatus @default(DRAFT)
+  warehouseId String?
   supplierId String?
   contractNo String?
   remark     String?
@@ -13,6 +14,7 @@ model InboundOrder {
   approvedById String?
   approvedAt   DateTime?
 
+  warehouse  Warehouse? @relation(fields: [warehouseId], references: [id])
   supplier   Supplier? @relation(fields: [supplierId], references: [id])
   createdBy  User      @relation("InboundCreator", fields: [createdById], references: [id])
   approvedBy User?     @relation("InboundApprover", fields: [approvedById], references: [id])

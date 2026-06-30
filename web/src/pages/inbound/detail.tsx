@@ -14,6 +14,7 @@ import { canActOnAssignee } from 'lib/approval-flow'
 import { useAuth } from 'lib/auth'
 import { GET_ORDER, GET_APPROVAL, SUBMIT, APPROVE, REJECT, RECEIVE, COMPLETE } from './queries'
 import { ReceiveLinesTable, linePending } from './receive-lines-table'
+import { ReceiveSummaryPanel } from './receive-summary'
 import { PrintButton } from 'components/print-button'
 import { LEGAL_PRINT_TEMPLATE } from 'lib/print-keys'
 
@@ -134,9 +135,11 @@ export default function InboundDetail() {
     category?: { shelfLifeMonths?: number | null }
   } | undefined
 
+  const showReceiveSummary = order.status === 'RECEIVING' || order.status === 'COMPLETED'
+
   return (
     <DocumentPage
-      title={`采购入库单 ${String(order.orderNo ?? '')}`}
+      title={String(order.orderNo ?? '')}
       backTo="/inbound"
       backLabel='采购入库'
       wide
@@ -161,10 +164,17 @@ export default function InboundDetail() {
       }
     >
       <Card className="leader-panel-card mb-4">
-        <CardContent className="grid grid-cols-3 gap-4 pt-6 text-sm">
-          <div><span className="text-muted-foreground">'状态'</span><p className="mt-1.5"><StatusBadge status={String(order.status)} /></p></div>
-          <div><span className="text-muted-foreground">'供应商'</span><p className="mt-1">{(order.supplier as { name?: string })?.name ?? '—'}</p></div>
-          <div><span className="text-muted-foreground">'合同号'</span><p className="mt-1">{String(order.contractNo ?? '—')}</p></div>
+        <CardContent className="grid grid-cols-2 gap-4 pt-6 text-sm sm:grid-cols-4">
+          <div><span className="text-muted-foreground">状态</span><p className="mt-1.5"><StatusBadge status={String(order.status)} /></p></div>
+          <div><span className="text-muted-foreground">收货仓库</span><p className="mt-1">{(order.warehouse as { name?: string })?.name ?? '—'}</p></div>
+          <div><span className="text-muted-foreground">供应商</span><p className="mt-1">{(order.supplier as { name?: string })?.name ?? '—'}</p></div>
+          <div><span className="text-muted-foreground">合同号</span><p className="mt-1">{String(order.contractNo ?? '—')}</p></div>
+          {showReceiveSummary && (
+            <ReceiveSummaryPanel
+              lines={orderLines}
+              receiving={order.status === 'RECEIVING'}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -174,7 +184,7 @@ export default function InboundDetail() {
             <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
             {approval.tasks && approval.tasks.some((t) => t.status !== 'PENDING') && (
               <div className="mt-4 space-y-2 border-t pt-4">
-                <p className="text-xs font-medium text-muted-foreground">'审批记录'</p>
+                <p className="text-xs font-medium text-muted-foreground">审批记录</p>
                 {approval.tasks.filter((t) => t.status !== 'PENDING').map((t) => (
                   <div key={t.id} className="flex justify-between text-xs">
                     <span>{t.nodeLabel} · {t.status === 'APPROVED' ? '通过' : '驳回'}</span>
@@ -190,7 +200,9 @@ export default function InboundDetail() {
       <ReceiveLinesTable
         lines={orderLines}
         receiving={order.status === 'RECEIVING'}
+        orderCompleted={order.status === 'COMPLETED'}
         activeLineId={receiveLineId}
+        warehouseName={(order.warehouse as { name?: string })?.name}
         onReceive={openReceive}
         onReprint={handleReprint}
       />

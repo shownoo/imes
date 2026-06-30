@@ -57,8 +57,8 @@ export function SplitConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md gap-0 p-0 overflow-hidden">
         <DialogHeader className="border-b px-6 py-4 text-left">
-          <DialogTitle>'拆零确认'</DialogTitle>
-          <DialogDescription>'核对在库数量后输入本次出库数量，拆零将自动生成剩余物资新码'</DialogDescription>
+          <DialogTitle>拆零确认</DialogTitle>
+          <DialogDescription>核对在库数量后输入本次出库数量，拆零将自动生成剩余物资新码</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4">
@@ -76,7 +76,7 @@ export function SplitConfirmDialog({
                 )}
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">'在库'</p>
+                <p className="text-xs text-muted-foreground">在库</p>
                 <p className="text-2xl font-semibold tabular-nums">
                   {stock.quantity}
                   <span className="ml-0.5 text-sm font-normal text-muted-foreground">{stock.unit}</span>
@@ -100,7 +100,8 @@ export function SplitConfirmDialog({
               {stock.unit && <span className="ml-1 text-lg font-normal text-muted-foreground">{stock.unit}</span>}
             </p>
             {willSplit && (
-              <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">'拆零后剩余'<span className="font-semibold tabular-nums">{remaining}</span> {stock.unit}，将打印新标签
+              <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
+                拆零后剩余 <span className="font-semibold tabular-nums">{remaining}</span> {stock.unit}，将打印新标签
               </p>
             )}
             {invalid && pickedQty > 0 && (

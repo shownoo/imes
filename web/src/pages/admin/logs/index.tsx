@@ -56,6 +56,7 @@ export default function LogsIndex() {
   return (
     <div>
       <ListToolbar
+        className="mb-4"
         search={
           <SearchInputShell>
             <Search className="absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />

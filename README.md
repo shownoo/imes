@@ -21,7 +21,7 @@
 | 模块 | 说明 |
 |------|------|
 | 物资档案 | 大类管理、物资建档、一品一码 |
-| 库区货位 | A/B/C/D 四区、货架二维码 |
+| 仓库货位 | 中心主库 + 战略备库、A/B/C/D 四区分区、货架二维码 |
 | 入库管理 | 选单→效期→赋码→上架 |
 | 出库管理 | 六状态流转、FIFO、拆零残余码 |
 | 库存盘点 | 水位预警、批次分布 |
@@ -81,6 +81,7 @@ MaterialCategory ─┬─ Material ─┬─ MaterialBatch ─ StockItem
 Supplier ─────────┘            └─ OutboundOrderLine
 
 Warehouse ─ Shelf ─ StockItem
+  ↑ 两库四区：主库(A/B/C) + 备库(D)
 StockItem ─ StockMovement (追溯链)
 Alert (效期/库存预警)
 ```

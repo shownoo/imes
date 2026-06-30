@@ -30,7 +30,7 @@ export function ThemePresetSelector({ compact }: { compact?: boolean }) {
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">'界面风格'</Label>
+      <Label className="text-xs text-muted-foreground">界面风格</Label>
       <Select value={theme.id} onValueChange={(v) => setThemeId(v as ThemePresetId)}>
         <SelectTrigger className="leader-panel-card">
           <SelectValue />

@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
-import { FormPage, FormField, FormGrid } from 'components/form-page'
-import { Button } from 'components/common'
+import {
+  FormPage,
+  FormSection,
+  FormStack,
+  InsetFormGroup,
+  InsetFormRow,
+  insetFormInputClass,
+} from 'components/form-page'
+import { FormProcessButtons } from 'components/form-process-buttons'
+import { MaterialLinesEditor } from 'components/material-lines-editor'
 import { Input } from 'components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { CREATE, UPDATE, GET_ORDER, GET_MATERIALS, emptyOutboundForm, type OutboundLineRow } from './queries'
 
 export default function OutboundForm() {
@@ -64,60 +71,58 @@ export default function OutboundForm() {
 
   return (
     <FormPage
-      title={isEdit ? '编辑出库单' : '新建出库单'}
-      desc="填写调拨用途、目的地与出库明细"
+      mode={isEdit ? 'edit' : 'create'}
       backTo={isEdit ? `/outbound/${id}` : '/outbound'}
       backLabel='出库管理'
       wide
       footer={
-        <>
-          <Button variant="outline" onClick={() => navigate(isEdit ? `/outbound/${id}` : '/outbound')}>取消</Button>
-          <Button onClick={handleSave} disabled={creating || updating}>{isEdit ? '保存' : '创建'}</Button>
-        </>
+        <FormProcessButtons
+          onCancel={() => navigate(isEdit ? `/outbound/${id}` : '/outbound')}
+          onSubmit={handleSave}
+          loading={creating || updating}
+        />
       }
     >
-      <FormGrid className="mb-6 grid-cols-3">
-        <FormField label='用途'><Input value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} placeholder='防汛抢险 / 救灾调拨' /></FormField>
-        <FormField label='目的地'><Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder='接收区域' /></FormField>
-        <FormField label='领用人'><Input value={form.recipient} onChange={(e) => setForm({ ...form, recipient: e.target.value })} placeholder='接收单位/联系人' /></FormField>
-      </FormGrid>
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-sm font-medium">'出库明细'</span>
-          <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setLines([...form.lines, { materialId: '', requestedQty: 1 }])}>+ 添加行</Button>
-        </div>
-        {form.lines.map((line, i) => (
-          <div key={i} className="flex gap-2">
-            <Select
-              value={line.materialId || 'none'}
-              onValueChange={(v) => {
-                const next = [...form.lines]
-                next[i] = { ...line, materialId: v === 'none' ? '' : v }
-                setForm({ ...form, lines: next })
-              }}
-            >
-              <SelectTrigger className="flex-1"><SelectValue placeholder='选择物资' /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">'选择物资'</SelectItem>
-                {materials.map((m) => <SelectItem key={String(m.id)} value={String(m.id)}>{String(m.code)} · {String(m.name)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              className="w-28"
-              value={line.requestedQty}
-              onChange={(e) => {
-                const next = [...form.lines]
-                next[i] = { ...line, requestedQty: Number(e.target.value) }
-                setForm({ ...form, lines: next })
-              }}
-            />
-            {form.lines.length > 1 && (
-              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setLines(form.lines.filter((_, j) => j !== i))}>×</Button>
-            )}
-          </div>
-        ))}
-      </div>
+      <FormStack>
+        <FormSection title="出库信息" desc="用途、目的地与领用人" inset narrow>
+          <InsetFormGroup>
+            <InsetFormRow label="用途">
+              <Input
+                className={insetFormInputClass}
+                value={form.purpose}
+                onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+                placeholder="防汛抢险 / 救灾调拨"
+              />
+            </InsetFormRow>
+            <InsetFormRow label="目的地">
+              <Input
+                className={insetFormInputClass}
+                value={form.destination}
+                onChange={(e) => setForm({ ...form, destination: e.target.value })}
+                placeholder="接收区域"
+              />
+            </InsetFormRow>
+            <InsetFormRow label="领用人">
+              <Input
+                className={insetFormInputClass}
+                value={form.recipient}
+                onChange={(e) => setForm({ ...form, recipient: e.target.value })}
+                placeholder="接收单位/联系人"
+              />
+            </InsetFormRow>
+          </InsetFormGroup>
+        </FormSection>
+
+        <FormSection title="出库明细" desc="选择物资并填写申请数量">
+          <MaterialLinesEditor
+            lines={form.lines.map((l) => ({ materialId: l.materialId, quantity: l.requestedQty }))}
+            materials={materials}
+            onChange={(next) => setLines(next.map((l) => ({ materialId: l.materialId, requestedQty: l.quantity })))}
+            onAddLine={() => setLines([...form.lines, { materialId: '', requestedQty: 1 }])}
+            quantityLabel="申请数量"
+          />
+        </FormSection>
+      </FormStack>
     </FormPage>
   )
 }

@@ -140,7 +140,7 @@ export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: Lea
               color: vi.textMuted,
               fontWeight: 750,
             }}
-          >'核心指标'</div>
+          >核心指标</div>
           <div
             style={{
               height: 1,
@@ -184,7 +184,7 @@ export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: Lea
                     paddingBottom: 6,
                     borderBottom: `1px dashed color-mix(in srgb, ${vi.border} 80%, transparent)`,
                   }}
-                >'关键指标'</div>
+                >关键指标</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -532,7 +532,7 @@ export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: Lea
                     background: vi.primary,
                   }}
                 />
-                <span style={{ fontSize: 11, color: vi.textMuted, fontWeight: 700 }}>'主指标卡'</span>
+                <span style={{ fontSize: 11, color: vi.textMuted, fontWeight: 700 }}>主指标卡</span>
               </div>
               {content}
             </div>

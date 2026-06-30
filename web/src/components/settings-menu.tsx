@@ -14,6 +14,9 @@ import {
 import { clearAuth, getStoredUser } from 'lib/apollo'
 import { getRoleLabel } from 'lib/auth'
 import i18n, { LanguageType, LANGUAGE_OPTIONS } from 'locales'
+import { sidebarFooterButtonClass } from 'lib/nav-styles'
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
+import { cn } from 'lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +29,13 @@ import {
   DropdownMenuTrigger,
 } from 'components/ui/dropdown-menu'
 
-export function UserMenu() {
+export function UserMenu({
+  placement = 'header',
+  collapsed = false,
+}: {
+  placement?: 'header' | 'sidebar'
+  collapsed?: boolean
+}) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const user = getStoredUser()
@@ -40,20 +49,21 @@ export function UserMenu() {
     navigate('/login')
   }
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="flex h-9 max-w-[9rem] items-center gap-1.5 rounded-lg px-1 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] xl:max-w-[12rem] xl:gap-2 xl:px-2"
-        >
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted/60">
-            <User className="size-3 text-muted-foreground" strokeWidth={2} />
-          </span>
-          <span
-            className="hidden min-w-0 truncate text-[13px] font-normal leading-none xl:block"
-            style={{ color: 'var(--leader-text-secondary, inherit)' }}
-          >
+  const isSidebar = placement === 'sidebar'
+
+  const sidebarButton = (
+    <button type="button" className={cn(sidebarFooterButtonClass(collapsed), 'w-full')}>
+      <span
+        className={cn(
+          'flex shrink-0 items-center justify-center rounded-full bg-muted/60',
+          collapsed ? 'size-7' : 'size-6',
+        )}
+      >
+        <User className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
+      </span>
+      {!collapsed && (
+        <>
+          <span className="min-w-0 flex-1 truncate text-[13px] font-normal leading-none">
             {displayName}
             {showRole && (
               <span className="mt-0.5 block truncate text-[10px] uppercase tracking-wide text-muted-foreground/80">
@@ -61,10 +71,49 @@ export function UserMenu() {
               </span>
             )}
           </span>
-          <ChevronDown className="size-3 shrink-0 text-muted-foreground/50" />
+          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground/50" />
+        </>
+      )}
+    </button>
+  )
+
+  const sidebarTrigger = collapsed ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <DropdownMenuTrigger asChild>{sidebarButton}</DropdownMenuTrigger>
+      </TooltipTrigger>
+      <TooltipContent side="right">{displayName}</TooltipContent>
+    </Tooltip>
+  ) : (
+    <DropdownMenuTrigger asChild>{sidebarButton}</DropdownMenuTrigger>
+  )
+
+  return (
+    <DropdownMenu>
+      {isSidebar ? (
+        sidebarTrigger
+      ) : (
+        <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 max-w-[9rem] items-center gap-1.5 rounded-lg px-1 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] lg:max-w-[12rem] lg:gap-2 lg:px-2"
+        >
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted/60 lg:size-6">
+            <User className="size-3.5 text-muted-foreground lg:size-3" strokeWidth={1.75} />
+          </span>
+          <span className="hidden min-w-0 flex-1 truncate text-[13px] font-normal leading-none lg:block">
+            {displayName}
+            {showRole && (
+              <span className="mt-0.5 block truncate text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                {roleLabel}
+              </span>
+            )}
+          </span>
+          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground/50 lg:size-3" />
         </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent align={isSidebar ? 'start' : 'end'} side={isSidebar ? 'top' : 'bottom'} className="w-52">
         <DropdownMenuLabel className="font-normal">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('账号')}</p>
           <p className="mt-1.5 text-sm font-medium">{displayName}</p>

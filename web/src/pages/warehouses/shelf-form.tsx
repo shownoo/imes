@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
-import { FormPage, FormField, FormGrid } from 'components/form-page'
-import { Button } from 'components/common'
+import {
+  FormPage,
+  FormSection,
+  FormStack,
+  InsetFormGroup,
+  InsetFormRow,
+  insetFormInputClass,
+  insetFormSelectTriggerClass,
+} from 'components/form-page'
+import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { GET_WAREHOUSES, GET_SHELVES, ADD_SHELF } from './queries'
@@ -64,30 +72,48 @@ export default function ShelfForm() {
 
   return (
     <FormPage
-      title={isEdit ? '编辑货位' : '新增货位'}
+      mode={isEdit ? 'edit' : 'create'}
       backTo="/warehouses?tab=shelf"
       backLabel='货位'
       footer={
-        <>
-          <Button variant="outline" onClick={() => navigate('/warehouses?tab=shelf')}>取消'</Button>
-          <Button onClick={handleSave} disabled={saving}>保存</Button>
-        </>
+        <FormProcessButtons
+          onCancel={() => navigate('/warehouses?tab=shelf')}
+          onSubmit={handleSave}
+          loading={saving}
+          submitTitle="保存"
+        />
       }
     >
-      <FormGrid>
-        <FormField label='货位编码' required><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></FormField>
-        <FormField label='货位名称' required><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></FormField>
-        <FormField label='所属库区' required>
-          <Select value={form.warehouseId} onValueChange={(v) => setForm({ ...form, warehouseId: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{warehouses.map((w) => <SelectItem key={String(w.id)} value={String(w.id)}>{String(w.name)}</SelectItem>)}</SelectContent>
-          </Select>
-        </FormField>
-        <FormField label='区域'><Input value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} /></FormField>
-        <FormField label='排'><Input value={form.row} onChange={(e) => setForm({ ...form, row: e.target.value })} /></FormField>
-        <FormField label='层'><Input type="number" value={String(form.level)} onChange={(e) => setForm({ ...form, level: Number(e.target.value) })} /></FormField>
-        <FormField label='容量'><Input type="number" value={String(form.capacity)} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} /></FormField>
-      </FormGrid>
+      <FormStack>
+        <FormSection title="货位信息" desc="编码、库区、位置与容量" inset>
+          <InsetFormGroup>
+            <InsetFormRow label='货位编码' required>
+              <Input className={insetFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='货位名称' required>
+              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='所属库区' required>
+              <Select value={form.warehouseId} onValueChange={(v) => setForm({ ...form, warehouseId: v })}>
+                <SelectTrigger className={insetFormSelectTriggerClass}><SelectValue /></SelectTrigger>
+                <SelectContent>{warehouses.map((w) => <SelectItem key={String(w.id)} value={String(w.id)}>{String(w.name)}</SelectItem>)}</SelectContent>
+              </Select>
+            </InsetFormRow>
+            <InsetFormRow label='区域'>
+              <Input className={insetFormInputClass} value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='排'>
+              <Input className={insetFormInputClass} value={form.row} onChange={(e) => setForm({ ...form, row: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='层'>
+              <Input type="number" className={insetFormInputClass} value={String(form.level)} onChange={(e) => setForm({ ...form, level: Number(e.target.value) })} />
+            </InsetFormRow>
+            <InsetFormRow label='容量'>
+              <Input type="number" className={insetFormInputClass} value={String(form.capacity)} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
+            </InsetFormRow>
+          </InsetFormGroup>
+        </FormSection>
+      </FormStack>
     </FormPage>
   )
 }

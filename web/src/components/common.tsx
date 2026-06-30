@@ -4,24 +4,51 @@ import { Button } from 'components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from 'components/ui/card'
 import { Skeleton } from 'components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table'
+import {
+  gridTableCellClass,
+  gridTableHeadClass,
+  gridTableRowClass,
+  imesDataTableClass,
+  isCodeColumn,
+  TableCodeCell,
+} from 'components/grid-table'
+import { InfoTip } from 'components/info-tip'
 import { LeaderPageHeader } from 'components/leader-page-header'
 import { LeaderSurfaceCard } from 'components/leader-surface-card'
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { cn, formatNumber } from 'lib/utils'
 
 export { ZoneHeatmap } from 'components/zone-heatmap'
 
-export function PageHeader({ title, desc, action }: { title: string; desc?: string; action?: React.ReactNode }) {
-  return <LeaderPageHeader title={title} desc={desc} action={action} />
+export function PageHeader({ title, desc, titleTip, action }: { title: string; desc?: string; titleTip?: string; action?: React.ReactNode }) {
+  return <LeaderPageHeader title={title} desc={desc} titleTip={titleTip} action={action} />
+}
+
+export type DataTableColumn = {
+  key: string
+  title: string
+  tip?: string
+  /** code：编码/单号列，使用 Apple 数字字体栈 */
+  cell?: 'code' | 'text' | 'default'
+  render?: (row: Record<string, unknown>) => React.ReactNode
+}
+
+function renderDataCell(col: DataTableColumn, row: Record<string, unknown>) {
+  if (col.render) return col.render(row)
+  const value = row[col.key]
+  if (isCodeColumn(col)) return <TableCodeCell>{value as string}</TableCodeCell>
+  if (value == null || value === '') return null
+  return String(value)
 }
 
 export function DataTable({ columns, rows, loading }: {
-  columns: { key: string; title: string; render?: (row: Record<string, unknown>) => React.ReactNode }[]
+  columns: DataTableColumn[]
   rows: Record<string, unknown>[]
   loading?: boolean
 }) {
   if (loading) {
     return (
-      <LeaderSurfaceCard contentClassName="space-y-3 p-6">
+      <LeaderSurfaceCard flat contentClassName="space-y-3 p-6">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
@@ -30,26 +57,37 @@ export function DataTable({ columns, rows, loading }: {
   }
 
   return (
-    <LeaderSurfaceCard>
-      <Table>
+    <LeaderSurfaceCard flat contentClassName="overflow-hidden p-0">
+      <Table className={imesDataTableClass}>
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
+          <TableRow className="border-b border-border/30 bg-transparent hover:bg-transparent">
             {columns.map((c) => (
-              <TableHead key={c.key} className="h-11 bg-muted/40 font-medium">{c.title}</TableHead>
+              <TableHead key={c.key} className={gridTableHeadClass} title={c.tip}>
+                <span className="inline-flex items-center gap-1">
+                  {c.title}
+                  {c.tip && (
+                    <InfoTip side="bottom" className="opacity-0 transition-opacity group-hover/th:opacity-100">
+                      {c.tip}
+                    </InfoTip>
+                  )}
+                </span>
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={columns.length} className="h-28 text-center text-muted-foreground">'暂无数据'</TableCell>
+            <TableRow className="border-0 hover:bg-transparent">
+              <TableCell colSpan={columns.length} className={`${gridTableCellClass} h-28 text-center text-muted-foreground`}>
+                暂无数据
+              </TableCell>
             </TableRow>
           ) : (
             rows.map((row, i) => (
-              <TableRow key={String(row.id ?? i)}>
+              <TableRow key={String(row.id ?? i)} className={gridTableRowClass}>
                 {columns.map((c) => (
-                  <TableCell key={c.key} className="py-3">
-                    {c.render ? c.render(row) : String(row[c.key] ?? '')}
+                  <TableCell key={c.key} className={gridTableCellClass}>
+                    {renderDataCell(c, row)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -65,14 +103,24 @@ export function RowActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete
   return (
     <div className="flex items-center gap-0.5">
       {onEdit && (
-        <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground" onClick={onEdit} title='编辑'>
-          <Pencil className="size-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:bg-muted/50 hover:text-foreground" onClick={onEdit}>
+              <Pencil className="size-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>编辑</TooltipContent>
+        </Tooltip>
       )}
       {onDelete && (
-        <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" onClick={onDelete} title='删除'>
-          <Trash2 className="size-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:bg-muted/50 hover:text-destructive" onClick={onDelete}>
+              <Trash2 className="size-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>删除</TooltipContent>
+        </Tooltip>
       )}
     </div>
   )
@@ -154,7 +202,7 @@ export function ExpiryHealthPanel({ health }: { health: { green: number; yellow:
       <div className="flex items-center justify-between">
         <div className="text-center">
           <p data-leader-kpi-value style={{ color: 'var(--leader-accent)' }}>{health.healthScore}%</p>
-          <p className="text-xs text-muted-foreground">'效期健康度'</p>
+          <p className="text-xs text-muted-foreground">效期健康度</p>
         </div>
         <div className="flex gap-4 text-center text-xs">
           <div><span className="block size-3 rounded-full bg-emerald-500 mx-auto mb-1" />安全 {health.greenPct}%</div>
@@ -167,4 +215,7 @@ export function ExpiryHealthPanel({ health }: { health: { green: number; yellow:
   )
 }
 
+export { TableCodeCell } from 'components/grid-table'
+export { PageActionButton, PageCreateButton, ToolbarButton } from 'components/app-button'
+export { FormProcessButtons } from 'components/form-process-buttons'
 export { Badge, Button, Card, CardContent, CardHeader, CardTitle }

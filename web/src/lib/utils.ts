@@ -24,6 +24,9 @@ export const ZONE_LABELS: Record<string, string> = {
   TEMPERATURE: '恒温库',
 }
 
+/** 库内存储分区 A/B/C/D（两库四区方案） */
+export { STORAGE_ZONE_LABELS } from 'lib/warehouse-layout'
+
 export const ALERT_LEVEL: Record<string, { label: string; color: string }> = {
   GREEN: { label: '安全', color: 'bg-emerald-500' },
   YELLOW: { label: '临期', color: 'bg-amber-400' },

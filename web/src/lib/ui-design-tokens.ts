@@ -75,18 +75,17 @@ export function resolveDesignSystemCssVars(
         ...base,
         '--cheta-card-radius': '16px',
         '--leader-card-radius': '16px',
-        '--ui-ds-input-radius': '12px',
-        '--ui-ds-button-radius': '20px',
-        '--ui-ds-form-input-bg': light
-          ? `color-mix(in srgb, ${accent} 6%, #ffffff)`
-          : `color-mix(in srgb, ${accent} 10%, transparent)`,
+        '--ui-ds-input-radius': '8px',
+        '--ui-ds-button-radius': '9999px',
+        /* 表单：白底 + 中性描边，避免主题色浸染发灰发蓝 */
+        '--ui-ds-form-input-bg': light ? 'hsl(var(--background))' : 'transparent',
         '--ui-ds-form-input-border': light
-          ? `color-mix(in srgb, ${accent} 28%, #c4c7cf)`
+          ? 'color-mix(in srgb, hsl(var(--border)) 68%, transparent)'
           : `color-mix(in srgb, ${accent} 35%, transparent)`,
-        '--ui-ds-primary-btn-shadow': `0 1px 2px rgba(0,0,0,0.12), 0 2px 6px color-mix(in srgb, ${accent} 28%, transparent)`,
+        '--ui-ds-primary-btn-shadow': `0 1px 2px rgba(0,0,0,0.08)`,
         '--leader-page-bg': light ? chetaPageBgLight(variant) : pv.bg,
         '--cheta-surface-shadow': light
-          ? '0 1px 2px rgba(0,0,0,0.08), 0 2px 6px 2px rgba(0,0,0,0.04)'
+          ? '0 1px 2px rgba(0,0,0,0.06)'
           : '0 1px 3px rgba(0,0,0,0.35)',
       }
 
@@ -97,7 +96,11 @@ export function resolveDesignSystemCssVars(
         '--leader-card-radius': '18px',
         '--ui-ds-input-radius': '10px',
         '--ui-ds-button-radius': '10px',
-        '--ui-ds-form-input-bg': light ? 'color-mix(in srgb, #fff 76%, transparent)' : pv.card,
+        /* 新建/修改：输入框与卡片同表面，仅描边区分（iOS Settings Inset Grouped） */
+        '--ui-ds-form-input-bg': light ? 'transparent' : pv.card,
+        '--ui-ds-form-input-border': light
+          ? 'color-mix(in srgb, hsl(var(--border)) 58%, transparent)'
+          : `color-mix(in srgb, ${accent} 28%, transparent)`,
         '--ui-ds-primary-btn-shadow': `0 1px 2px rgba(0,0,0,0.07), 0 6px 18px color-mix(in srgb, ${accent} 32%, transparent)`,
         '--leader-page-bg':
           light && preset.overview === 'liquid-glass'

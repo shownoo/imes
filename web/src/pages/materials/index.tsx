@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { gql, useQuery, useMutation } from '@apollo/client'
-import { Layers, Package, Plus, Search, Truck } from 'lucide-react'
-import { PageHeader, DataTable, RowActions, Badge, Button } from 'components/common'
+import { Layers, Package, Search, Truck } from 'lucide-react'
+import { PageHeader, DataTable, RowActions, Badge, PageCreateButton } from 'components/common'
 import { ImageThumb } from 'components/image-gallery'
 import { DebounceInput } from 'components/debounce-input'
-import { SectionMenu } from 'components/section-menu'
+import { SectionMenu, SearchInputShell } from 'components/section-menu'
 import { Tabs, TabsContent } from 'components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { ZONE_LABELS } from 'lib/utils'
 import {
   GET_MATERIALS, GET_CATEGORIES, GET_SUPPLIERS,
@@ -63,54 +64,67 @@ export default function MaterialsIndex() {
           items={MASTER_MENU}
           value={tab}
           onChange={(v) => setTab(v as MasterTab)}
-          trailing={
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-              {tab === 'materials' && (
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                  <DebounceInput
-                    key="materials-search"
-                    className="pl-9"
-                    placeholder="搜索编码或名称..."
-                    defaultValue={search}
-                    debounceTime={500}
-                    onSearch={setSearch}
-                  />
-                </div>
-              )}
-              <Button className="shrink-0" onClick={() => navigate(createPath)}>
-                <Plus className="size-4" /> 新增{TAB_LABELS[tab]}
-              </Button>
-            </div>
-          }
+          toolbar={{
+            search: tab === 'materials' ? (
+              <SearchInputShell>
+                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+                <DebounceInput
+                  key="materials-search"
+                  className="pl-9"
+                  placeholder="搜索编码或名称..."
+                  defaultValue={search}
+                  debounceTime={500}
+                  onSearch={setSearch}
+                />
+              </SearchInputShell>
+            ) : undefined,
+            action: (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <PageCreateButton className="shrink-0" label={`新增${TAB_LABELS[tab]}`} onClick={() => navigate(createPath)} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">新增{TAB_LABELS[tab]}记录</TooltipContent>
+              </Tooltip>
+            ),
+          }}
         />
 
         <TabsContent value="materials" className="mt-4">
           <DataTable loading={matLoading} columns={[
-            { key: 'thumb', title: '图片', render: (r) => (
+            { key: 'thumb', title: '图片', tip: '物资参考图片', render: (r) => (
               <ImageThumb
                 images={r.images as Array<{ file?: { url?: string; name?: string } }>}
                 totalCount={(r._count as { images?: number })?.images}
               />
             ) },
-            { key: 'code', title: '编码' }, { key: 'name', title: '名称' }, { key: 'spec', title: '规格' }, { key: 'unit', title: '单位' },
-            { key: 'category', title: '大类', render: (r) => (r.category as { name?: string })?.name ?? '—' },
-            { key: 'supplier', title: '默认供应商', render: (r) => (r.supplier as { name?: string })?.name ?? '—' },
+            { key: 'code', title: '编码', tip: '物资唯一编码，全局不可重复' },
+            { key: 'name', title: '名称', tip: '物资标准名称' },
+            { key: 'spec', title: '规格', tip: '包装规格或型号' },
+            { key: 'unit', title: '单位', tip: '计量单位，如件、箱、套' },
+            { key: 'category', title: '大类', tip: '所属物资大类，决定库内分区与效期规则', render: (r) => (r.category as { name?: string })?.name ?? '—' },
+            { key: 'supplier', title: '默认供应商', tip: '采购入库时的默认供货方', render: (r) => (r.supplier as { name?: string })?.name ?? '—' },
             { key: 'action', title: '操作', render: (r) => <RowActions onEdit={() => navigate(editPath(String(r.id)))} onDelete={() => handleDelete('materials', String(r.id))} /> },
           ]} rows={materials} />
         </TabsContent>
         <TabsContent value="categories" className="mt-4">
           <DataTable loading={catLoading} columns={[
-            { key: 'code', title: '编码' }, { key: 'name', title: '名称' },
-            { key: 'zone', title: '库区', render: (r) => <Badge variant="secondary">{ZONE_LABELS[String(r.zone)]}</Badge> },
-            { key: 'shelfLifeMonths', title: '保质期(月)' }, { key: 'safetyStockMin', title: '安全库存下限' },
+            { key: 'code', title: '编码', tip: '大类唯一编码' },
+            { key: 'name', title: '名称', tip: '物资大类名称' },
+            { key: 'zone', title: '存储分区', tip: '库内 A/B/C/D 分区类型', render: (r) => <Badge variant="secondary">{ZONE_LABELS[String(r.zone)]}</Badge> },
+            { key: 'shelfLifeMonths', title: '保质期(月)', tip: '该大类物资默认保质期' },
+            { key: 'safetyStockMin', title: '安全库存下限', tip: '低于此值触发低库存预警' },
             { key: 'action', title: '操作', render: (r) => <RowActions onEdit={() => navigate(editPath(String(r.id)))} onDelete={() => handleDelete('categories', String(r.id))} /> },
           ]} rows={categories} />
         </TabsContent>
         <TabsContent value="suppliers" className="mt-4">
           <DataTable loading={supLoading} columns={[
-            { key: 'code', title: '编码' }, { key: 'name', title: '名称' }, { key: 'contact', title: '联系人' },
-            { key: 'phone', title: '电话' }, { key: 'address', title: '地址' },
+            { key: 'code', title: '编码', tip: '供应商唯一编码' },
+            { key: 'name', title: '名称', tip: '供应商全称' },
+            { key: 'contact', title: '联系人', tip: '主要对接人' },
+            { key: 'phone', title: '电话', tip: '联系电话' },
+            { key: 'address', title: '地址', tip: '供货方地址' },
             { key: 'action', title: '操作', render: (r) => <RowActions onEdit={() => navigate(editPath(String(r.id)))} onDelete={() => handleDelete('suppliers', String(r.id))} /> },
           ]} rows={suppliers} />
         </TabsContent>

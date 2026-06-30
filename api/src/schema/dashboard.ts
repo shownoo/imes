@@ -2,13 +2,9 @@ import { builder } from '../builder.js'
 import { calcExpiryLevel } from '../lib/utils.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { enrichPendingTasks, countMyPendingTasks } from '../lib/approval.js'
+import { STORAGE_ZONE_LABELS, storageZoneCapacity } from '../lib/warehouse-layout.js'
 
-const ZONE_LABELS: Record<string, string> = {
-  A: 'A区·抢险类',
-  B: 'B区·救助类',
-  C: 'C区·通用类',
-  D: 'D区·恒温库',
-}
+const ZONE_LABELS = STORAGE_ZONE_LABELS
 
 builder.queryField('dashboard', (t) =>
   t.field({
@@ -176,7 +172,7 @@ builder.queryField('dashboard', (t) =>
           zone,
           label: ZONE_LABELS[zone] ?? zone,
           quantity,
-          capacity: warehouses.find((w) => w.code === `WH-${zone}`)?.capacity ?? 0,
+          capacity: storageZoneCapacity(zone),
         })),
         pendingTasks,
         myApprovals,

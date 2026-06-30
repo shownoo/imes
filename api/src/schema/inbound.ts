@@ -8,6 +8,7 @@ import { startApprovalInstance, findPendingTaskForBiz, completeApprovalTask } fr
 import { IdInput, PaginationInput } from './input-types.js'
 
 function snapInboundOrder(order: {
+  warehouseId?: string | null
   supplierId?: string | null
   contractNo?: string | null
   remark?: string | null
@@ -15,6 +16,7 @@ function snapInboundOrder(order: {
   lines?: Array<{ material?: { name: string }; expectedQty: number }>
 }) {
   return {
+    warehouseId: order.warehouseId,
     supplierId: order.supplierId,
     contractNo: order.contractNo,
     remark: order.remark,
@@ -36,6 +38,7 @@ const InboundLineInput = builder.inputType('InboundLineInput', {
 const CreateInboundInput = builder.inputType('CreateInboundInput', {
   fields: (t) => ({
     type: t.string({ required: false }),
+    warehouseId: t.id({ required: false }),
     supplierId: t.id({ required: false }),
     contractNo: t.string({ required: false }),
     remark: t.string({ required: false }),
@@ -46,6 +49,7 @@ const CreateInboundInput = builder.inputType('CreateInboundInput', {
 const UpdateInboundInput = builder.inputType('UpdateInboundInput', {
   fields: (t) => ({
     id: t.id({ required: true }),
+    warehouseId: t.id({ required: false }),
     supplierId: t.id({ required: false }),
     contractNo: t.string({ required: false }),
     remark: t.string({ required: false }),
@@ -77,18 +81,21 @@ builder.queryField('getInboundOrders', (t) =>
     args: {
       type: t.arg.string({ required: false }),
       status: t.arg.string({ required: false }),
+      warehouseId: t.arg.id({ required: false }),
       input: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: async (_, { type, status, input }, ctx) => {
+    resolve: async (_, { type, status, warehouseId, input }, ctx) => {
       const where: Record<string, unknown> = {}
       if (type) where.type = type
       if (status) where.status = status
+      if (warehouseId) where.warehouseId = warehouseId
       const [orders, count] = await Promise.all([
         ctx.prisma.inboundOrder.findMany({
           where,
           take: input?.take ?? 20,
           skip: input?.skip ?? 0,
           include: {
+            warehouse: true,
             supplier: true,
             createdBy: true,
             approvedBy: true,
@@ -112,6 +119,7 @@ builder.queryField('getInboundOrder', (t) =>
       const order = await ctx.prisma.inboundOrder.findUnique({
         where: { id: input.id },
         include: {
+          warehouse: true,
           supplier: true,
           createdBy: true,
           approvedBy: true,
@@ -129,7 +137,7 @@ builder.queryField('getInboundOrder', (t) =>
               materialId: line.materialId,
               batch: { inboundOrderId: order.id, batchNo: line.batchNo },
             },
-            include: { material: true, batch: true, shelf: true },
+            include: { material: true, batch: true, shelf: { include: { warehouse: true } } },
             orderBy: { createdAt: 'asc' },
           })
           return { ...line, stockItems }
@@ -157,12 +165,15 @@ builder.mutationField('createInboundOrder', (t) =>
     args: { input: t.arg({ type: CreateInboundInput, required: true }) },
     resolve: async (_, { input }, ctx) => {
       const inboundType = (input.type ?? 'PURCHASE') as 'PURCHASE' | 'TRANSFER' | 'RETURN'
+      if (!input.warehouseId) throw new Error('请选择收货仓库')
+      await ctx.prisma.warehouse.findUniqueOrThrow({ where: { id: input.warehouseId } })
       const prefix = inboundType === 'PURCHASE' ? 'CG' : inboundType === 'TRANSFER' ? 'DB' : 'TH'
       const result = await ctx.prisma.inboundOrder.create({
         data: {
           orderNo: genOrderNo(prefix),
           type: inboundType,
           status: 'DRAFT',
+          warehouseId: input.warehouseId,
           supplierId: input.supplierId,
           contractNo: input.contractNo,
           remark: input.remark,
@@ -176,7 +187,7 @@ builder.mutationField('createInboundOrder', (t) =>
             })),
           },
         },
-        include: { lines: { include: { material: true } }, supplier: true },
+        include: { warehouse: true, lines: { include: { material: true } }, supplier: true },
       })
       await writeSystemLog(ctx, {
         action: 'CREATE',
@@ -219,7 +230,7 @@ builder.mutationField('updateInboundOrder', (t) =>
       const result = await ctx.prisma.inboundOrder.update({
         where: { id },
         data: data as never,
-        include: { lines: { include: { material: true } }, supplier: true },
+        include: { warehouse: true, lines: { include: { material: true } }, supplier: true },
       })
       await writeSystemLog(ctx, {
         action: 'UPDATE',
@@ -268,6 +279,7 @@ builder.mutationField('submitInboundOrder', (t) =>
         include: { lines: true },
       })
       if (!order.lines.length) throw new Error('请添加入库明细')
+      if (!order.warehouseId) throw new Error('请选择收货仓库后再提交')
       const result = await ctx.prisma.inboundOrder.update({
         where: { id: input.id },
         data: { status: 'PENDING' },
@@ -450,11 +462,25 @@ builder.mutationField('shelveStockItem', (t) =>
     resolve: async (_, { input }, ctx) => {
       const shelf = await ctx.prisma.shelf.findUniqueOrThrow({
         where: { qrCode: input.shelfQrCode },
+        include: { warehouse: true },
       })
+      const existing = await ctx.prisma.stockItem.findUniqueOrThrow({
+        where: { id: input.stockItemId },
+        include: {
+          batch: { include: { inboundOrder: { include: { warehouse: true } } } },
+        },
+      })
+      const orderWarehouseId = existing.batch?.inboundOrder?.warehouseId
+      if (orderWarehouseId && shelf.warehouseId !== orderWarehouseId) {
+        const orderWh = existing.batch?.inboundOrder?.warehouse
+        throw new Error(
+          `该货位属于「${shelf.warehouse.name}」，本单收货库为「${orderWh?.name ?? '未知'}」`,
+        )
+      }
       const item = await ctx.prisma.stockItem.update({
         where: { id: input.stockItemId },
         data: { shelfId: shelf.id },
-        include: { material: true, batch: true, shelf: true },
+        include: { material: true, batch: true, shelf: { include: { warehouse: true } } },
       })
       await ctx.prisma.stockMovement.create({
         data: {
@@ -486,10 +512,15 @@ builder.mutationField('completeInboundOrder', (t) =>
     resolve: async (_, { input }, ctx) => {
       const order = await ctx.prisma.inboundOrder.findUniqueOrThrow({
         where: { id: input.id },
-        include: { lines: true },
+        include: {
+          lines: true,
+          batches: { include: { stockItems: true } },
+        },
       })
       const unreceived = order.lines.some((l) => l.actualQty < l.expectedQty)
       if (unreceived) throw new Error('存在未完成收货的明细')
+      const unshelved = order.batches.flatMap((b) => b.stockItems).filter((s) => !s.shelfId)
+      if (unshelved.length) throw new Error('存在未上架的物资，请先扫码上架')
       const result = await ctx.prisma.inboundOrder.update({
         where: { id: input.id },
         data: { status: 'COMPLETED' },

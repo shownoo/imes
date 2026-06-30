@@ -229,7 +229,7 @@ export function ImageThumb({
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
 
   if (!items.length) {
-    return <span className="text-muted-foreground">—</span>
+    return null
   }
 
   const stack = items.slice(0, Math.min(items.length, count >= 2 ? 2 : 1))

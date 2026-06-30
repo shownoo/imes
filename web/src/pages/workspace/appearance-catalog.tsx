@@ -97,8 +97,8 @@ export function AppearanceCatalogSection() {
     <div className="space-y-10">
       <section id="recommended-combos">
         <div className="mb-4">
-          <h2 className="text-lg font-bold">'推荐组合'</h2>
-          <p className="mt-1 text-sm text-muted-foreground">'设计语言 + 色系一键应用，保证导航、卡片与 KPI 视觉一致'</p>
+          <h2 className="text-lg font-bold">推荐组合</h2>
+          <p className="mt-1 text-sm text-muted-foreground">设计语言 + 色系一键应用，保证导航、卡片与 KPI 视觉一致</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {UI_RECOMMENDED_COMBOS.map((combo) => (
@@ -117,8 +117,8 @@ export function AppearanceCatalogSection() {
 
       <section id="design-language">
         <div className="mb-4">
-          <h2 className="text-lg font-bold">'设计语言'</h2>
-          <p className="mt-1 text-sm text-muted-foreground">'选择界面范式（Material / Fluent / Apple / Carbon 等），与色系联动应用'</p>
+          <h2 className="text-lg font-bold">设计语言</h2>
+          <p className="mt-1 text-sm text-muted-foreground">选择界面范式（Material / Fluent / Apple / Carbon 等），与色系联动应用</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {UI_DESIGN_SYSTEMS.map((ds) => (
@@ -136,8 +136,8 @@ export function AppearanceCatalogSection() {
 
       <section id="color-schemes">
         <div className="mb-4">
-          <h2 className="text-lg font-bold">'色系'</h2>
-          <p className="mt-1 text-sm text-muted-foreground">'校色 / 品牌 / 政务 / 学术 — 顶栏与 KPI 强调色身份'</p>
+          <h2 className="text-lg font-bold">色系</h2>
+          <p className="mt-1 text-sm text-muted-foreground">校色 / 品牌 / 政务 / 学术 — 顶栏与 KPI 强调色身份</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {UI_COLOR_SCHEMES.map((cs) => (

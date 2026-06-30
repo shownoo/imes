@@ -5,6 +5,8 @@ import { Bell, ClipboardCheck, AlertTriangle } from 'lucide-react'
 import type { ApprovalInboxItem } from 'lib/approval-flow'
 import { ALERT_LEVEL, cn, formatDate } from 'lib/utils'
 import { GET_INBOX, GET_INBOX_COUNT } from 'pages/tasks/queries'
+import { sidebarFooterButtonClass } from 'lib/nav-styles'
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,12 +59,18 @@ function SectionHeader({
         type="button"
         onClick={onViewAll}
         className="text-[11px] font-medium text-primary hover:underline"
-      >'全部'</button>
+      >全部</button>
     </div>
   )
 }
 
-export function NotificationCenter() {
+export function NotificationCenter({
+  placement = 'header',
+  collapsed = false,
+}: {
+  placement?: 'header' | 'sidebar'
+  collapsed?: boolean
+}) {
   const navigate = useNavigate()
   const { data: inboxData } = useQuery(GET_INBOX, { pollInterval: 30_000 })
   const { data: countData } = useQuery(GET_INBOX_COUNT, { pollInterval: 30_000 })
@@ -78,25 +86,69 @@ export function NotificationCenter() {
   const alertCount = alertPayload?.count ?? alerts.length
   const totalCount = approvalCount + alertCount
 
+  const isSidebar = placement === 'sidebar'
+
+  const sidebarButton = (
+    <button
+      type="button"
+      aria-label="通知中心"
+      className={cn(sidebarFooterButtonClass(collapsed), 'relative w-full')}
+    >
+      <Bell className="size-4 shrink-0" strokeWidth={1.75} />
+      {!collapsed && <span className="flex-1 truncate text-left">通知</span>}
+      {totalCount > 0 && (
+        <span
+          className={cn(
+            'flex items-center justify-center rounded-full bg-destructive text-[10px] font-semibold tabular-nums text-destructive-foreground',
+            collapsed
+              ? 'absolute -right-0.5 -top-0.5 size-4'
+              : 'ml-auto h-5 min-w-5 rounded-md px-1',
+          )}
+        >
+          {totalCount > 99 ? '99+' : totalCount}
+        </span>
+      )}
+    </button>
+  )
+
+  const sidebarTrigger = collapsed ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <DropdownMenuTrigger asChild>{sidebarButton}</DropdownMenuTrigger>
+      </TooltipTrigger>
+      <TooltipContent side="right">通知</TooltipContent>
+    </Tooltip>
+  ) : (
+    <DropdownMenuTrigger asChild>{sidebarButton}</DropdownMenuTrigger>
+  )
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label='通知中心'
-          className="relative flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-        >
-          <Bell className="size-4 text-muted-foreground" strokeWidth={2} />
-          {totalCount > 0 && (
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold leading-none text-destructive-foreground">
-              {totalCount > 99 ? '99+' : totalCount}
-            </span>
-          )}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-0">
+      {isSidebar ? (
+        sidebarTrigger
+      ) : (
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="通知中心"
+            className="relative flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+          >
+            <Bell className="size-4 text-muted-foreground" strokeWidth={2} />
+            {totalCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold leading-none text-destructive-foreground">
+                {totalCount > 99 ? '99+' : totalCount}
+              </span>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent
+        align={isSidebar ? 'start' : 'end'}
+        side={isSidebar ? 'top' : 'bottom'}
+        className="w-[min(22rem,calc(100vw-2rem))] p-0"
+      >
         <DropdownMenuLabel className="border-b px-3 py-2.5 font-normal">
-          <p className="text-sm font-medium">'通知中心'</p>
+          <p className="text-sm font-medium">通知中心</p>
           <p className="text-xs text-muted-foreground">
             {totalCount > 0 ? `${totalCount} 条未读` : '暂无新通知'}
           </p>
@@ -105,12 +157,12 @@ export function NotificationCenter() {
         <div className="max-h-[min(60vh,420px)] overflow-y-auto py-1">
           <SectionHeader
             icon={ClipboardCheck}
-            title='审批待办'
+            title="审批待办"
             count={approvalCount}
             onViewAll={() => navigate('/tasks')}
           />
           {tasks.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">'暂无待审批任务'</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">暂无待审批任务</p>
           ) : (
             tasks.map((task) => (
               <DropdownMenuItem
@@ -134,12 +186,12 @@ export function NotificationCenter() {
 
           <SectionHeader
             icon={AlertTriangle}
-            title='智能预警'
+            title="智能预警"
             count={alertCount}
             onViewAll={() => navigate('/alerts')}
           />
           {alerts.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">'暂无未处理预警'</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">暂无未处理预警</p>
           ) : (
             alerts.map((alert) => {
               const lv = ALERT_LEVEL[alert.level] ?? { label: alert.level, color: 'bg-muted' }

@@ -9,12 +9,19 @@ builder.queryField('getStockItems', (t) =>
     args: {
       status: t.arg.string({ required: false }),
       materialId: t.arg.id({ required: false }),
+      warehouseId: t.arg.id({ required: false }),
       input: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: async (_, { status, materialId, input }, ctx) => {
+    resolve: async (_, { status, materialId, warehouseId, input }, ctx) => {
       const where: Record<string, unknown> = {}
       if (status) where.status = status
       if (materialId) where.materialId = materialId
+      if (warehouseId) {
+        where.OR = [
+          { shelf: { warehouseId } },
+          { shelfId: null, batch: { inboundOrder: { warehouseId } } },
+        ]
+      }
       if (input?.search) {
         where.OR = [
           { qrCode: containsI(input.search) },
@@ -51,11 +58,22 @@ builder.queryField('getInventorySummary', (t) =>
   t.field({
     type: 'JSON',
     authScopes: { authenticated: true },
-    resolve: async (_, __, ctx) => {
+    args: { warehouseId: t.arg.id({ required: false }) },
+    resolve: async (_, { warehouseId }, ctx) => {
+      const stockWhere = warehouseId
+        ? {
+            status: 'IN_STOCK' as const,
+            OR: [
+              { shelf: { warehouseId } },
+              { shelfId: null, batch: { inboundOrder: { warehouseId } } },
+            ],
+          }
+        : { status: 'IN_STOCK' as const }
+
       const materials = await ctx.prisma.material.findMany({
         include: {
           category: true,
-          stockItems: { where: { status: 'IN_STOCK' }, include: { batch: true } },
+          stockItems: { where: stockWhere, include: { batch: true } },
         },
       })
 

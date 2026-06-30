@@ -9,10 +9,10 @@ export function ApprovalInboxNavItem({ className }: { className?: string }) {
 
   return (
     <NavLink to="/tasks" className={className} title="我的待办">
-      <ClipboardCheck />
-      <span>我的待办</span>
+      <ClipboardCheck className="size-4 shrink-0 opacity-80" strokeWidth={1.75} />
+      <span className="flex-1 truncate">我的待办</span>
       {count > 0 && (
-        <span className="ml-0.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
+        <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md bg-destructive px-1 text-[10px] font-semibold tabular-nums text-destructive-foreground">
           {count > 99 ? '99+' : count}
         </span>
       )}

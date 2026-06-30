@@ -1,6 +1,7 @@
 import { gql } from '@apollo/client'
 
-export const GET_INBOUND = gql`query GetInboundOrders($type: String, $status: String, $input: PaginationInput) { getInboundOrders(type: $type, status: $status, input: $input) }`
+export const GET_INBOUND = gql`query GetInboundOrders($type: String, $status: String, $warehouseId: ID, $input: PaginationInput) { getInboundOrders(type: $type, status: $status, warehouseId: $warehouseId, input: $input) }`
+export const GET_WAREHOUSES = gql`query GetWarehouses { getWarehouses }`
 export const GET_ORDER = gql`query GetInboundOrder($input: IdInput!) { getInboundOrder(input: $input) }`
 export const GET_SUPPLIERS = gql`query GetSuppliers($input: PaginationInput) { getSuppliers(input: $input) }`
 export const GET_MATERIALS = gql`query GetMaterials($input: PaginationInput) { getMaterials(input: $input) }`

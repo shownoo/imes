@@ -9,5 +9,6 @@ model Warehouse {
   area      Float?
   capacity  Int?
 
-  shelves Shelf[]
+  shelves       Shelf[]
+  inboundOrders InboundOrder[]
 }

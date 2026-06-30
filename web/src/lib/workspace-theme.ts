@@ -78,6 +78,19 @@ export const PREFS_CHANGE_EVENT = 'imes-prefs-change'
 
 export type ContentMarginId = '24' | '32' | '40' | '48'
 export type ContentMaxWidthId = '1280' | '1440' | '1680' | '1920' | 'full'
+export type NavLayoutId = 'top' | 'left'
+
+export const NAV_LAYOUT_OPTIONS: Array<{ id: NavLayoutId; label: string; desc: string }> = [
+  { id: 'top', label: '顶端', desc: '菜单在页面顶部横向排列，从左向右' },
+  { id: 'left', label: '左侧', desc: '菜单在左侧纵向排列；通知与用户固定在左下角' },
+]
+
+const LEGACY_NAV_LAYOUT_MAP: Record<string, NavLayoutId> = {
+  'horizontal-left': 'top',
+  'horizontal-even': 'top',
+  top: 'top',
+  left: 'left',
+}
 export type ViewPerspectiveId = 'leader' | 'operator' | 'warehouse'
 
 export const CONTENT_MARGIN_OPTIONS: Array<{ id: ContentMarginId; px: number }> = [
@@ -119,6 +132,15 @@ export function normalizeContentMaxWidthId(value: string | undefined): ContentMa
   return LEGACY_MAX_WIDTH_MAP[value ?? ''] ?? '1680'
 }
 
+export function normalizeNavLayoutId(value: string | undefined): NavLayoutId {
+  if (value && NAV_LAYOUT_OPTIONS.some((o) => o.id === value)) return value as NavLayoutId
+  return LEGACY_NAV_LAYOUT_MAP[value ?? ''] ?? 'top'
+}
+
+export function getNavLayoutSummaryLabel(navLayout: NavLayoutId): string {
+  return NAV_LAYOUT_OPTIONS.find((o) => o.id === navLayout)?.label ?? '顶端'
+}
+
 export function getLayoutMaxWidthSummaryLabel(maxWidth: ContentMaxWidthId): string {
   if (maxWidth === '1680') return '标准宽度 1680px'
   if (maxWidth === 'full') return '全宽 100%'
@@ -137,6 +159,7 @@ export function getLayoutPreviewSummary(margin: ContentMarginId, maxWidth: Conte
 export type WorkspacePreferences = {
   margin: ContentMarginId
   maxWidth: ContentMaxWidthId
+  navLayout: NavLayoutId
   widgets: WorkspaceWidget[]
 }
 
@@ -209,6 +232,7 @@ export const DEFAULT_WORKSPACE_WIDGETS: WorkspaceWidget[] = [
 export const DEFAULT_PREFERENCES: WorkspacePreferences = {
   margin: '24',
   maxWidth: '1680',
+  navLayout: 'top',
   widgets: DEFAULT_WORKSPACE_WIDGETS,
 }
 
@@ -232,7 +256,7 @@ export function findOppositeModePreset(current: LeaderStylePreset): LeaderStyleP
   return opposite ?? LEADER_STYLE_PRESETS[0]!
 }
 
-export function applyLayoutPreferences(prefs: Pick<WorkspacePreferences, 'margin' | 'maxWidth'>) {
+export function applyLayoutPreferences(prefs: Pick<WorkspacePreferences, 'margin' | 'maxWidth' | 'navLayout'>) {
   const margin = CONTENT_MARGIN_OPTIONS.find((m) => m.id === prefs.margin)?.px ?? 24
   const maxOpt = CONTENT_MAX_WIDTH_OPTIONS.find((m) => m.id === prefs.maxWidth)
   const max = maxOpt?.max ?? '1440px'
@@ -243,6 +267,7 @@ export function applyLayoutPreferences(prefs: Pick<WorkspacePreferences, 'margin
   } else {
     root.style.setProperty('--leader-content-max', max)
   }
+  document.body.setAttribute('data-imes-nav-layout', prefs.navLayout)
 }
 
 function readLegacyWidgets(): WorkspaceWidget[] | null {
@@ -263,6 +288,7 @@ export function readWorkspacePreferences(): WorkspacePreferences {
       return {
         margin: normalizeContentMarginId(parsed.margin),
         maxWidth: normalizeContentMaxWidthId(parsed.maxWidth),
+        navLayout: normalizeNavLayoutId(parsed.navLayout),
         widgets: mergeWidgets(parsed.widgets),
       }
     }

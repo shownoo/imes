@@ -58,13 +58,11 @@ export function ReceiveCodingPanel({
           <h3 className="truncate text-[15px] font-semibold tracking-tight">
             收货赋码 · {materialName}
           </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">'录入批次效期，系统自动生成二维码'</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">录入批次效期，系统自动生成二维码</p>
         </div>
-        <button
-          type="button"
-          className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
-          onClick={onCancel}
-        >'取消'</button>
+        <Button variant="ghost" size="sm" className="shrink-0" onClick={onCancel}>
+          取消
+        </Button>
       </div>
 
       <div className="space-y-4 px-4 py-4 sm:px-5">

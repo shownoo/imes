@@ -1,5 +1,4 @@
 @import './styles/imes-fonts.css';
-@import './styles/imes-header.css';
 @import './styles/leader-skin.css';
 @import './styles/leader-page-skin.css';
 @import './styles/ui-design-systems.css';
@@ -30,6 +29,12 @@
     --input: 217 33% 18%;
     --ring: 199 89% 48%;
     --radius: 0.75rem;
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-accent: 217 33% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 18%;
+    --sidebar-ring: 199 89% 48%;
     --gold: 43 74% 58%;
     --leader-content-padding: 24px;
     --leader-content-max: 1440px;

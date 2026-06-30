@@ -107,6 +107,15 @@ export function getStatusConfig(status: string): StatusConfig {
   return { ...base, label: translate(base.label) }
 }
 
+/** 出库流程步骤 */
+export const OUTBOUND_PROCESS_STEPS = [
+  { label: '新建申请', tip: '填写用途、目的地与物资明细，保存草稿后可提交审核' },
+  { label: '主管审核', tip: '提交后进入审批流，审核通过后方可开始拣货' },
+  { label: 'FIFO拣货', tip: '按效期优先推荐拣货路径，扫码逐件确认出库数量' },
+  { label: '拆零赋码', tip: '整包出库时可拆分剩余库存，并生成新的二维码标签' },
+  { label: '确认出库', tip: '全部拣货完成后确认出库，库存自动扣减' },
+] as const
+
 /** 出库单筛选顺序（工作流） */
 export const OUTBOUND_STATUS_FILTERS = [
   'all',
@@ -127,4 +136,12 @@ export const INBOUND_STATUS_FILTERS = [
   'RECEIVING',
   'COMPLETED',
   'CANCELLED',
+] as const
+
+/** 采购入库流程步骤 */
+export const INBOUND_PROCESS_STEPS = [
+  { label: '选单清点', tip: '创建入库单并核对到货物资与采购明细' },
+  { label: '补充批次效期', tip: '录入生产批次与保质期，支撑 FIFO 拣货' },
+  { label: '蓝牙批量赋码', tip: '连接蓝牙打印机，批量生成并粘贴物资二维码' },
+  { label: '扫码上架绑定', tip: '扫描货位码完成上架，建立物资与货位关联' },
 ] as const

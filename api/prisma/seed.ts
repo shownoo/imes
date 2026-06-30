@@ -1,25 +1,25 @@
 import bcrypt from 'bcryptjs'
 import { PrismaClient, type Prisma } from '@prisma/client'
 import { buildChangeDetail } from '../src/lib/log-diff.js'
+import { genQrCode } from '../src/lib/utils.js'
 import { seedRbac } from './rbac-seed.js'
 import { seedApprovalFlows } from './approval-seed.js'
 import { seedPrintTemplates } from '../scripts/lib/seed-print-templates.js'
 import { DEFAULT_NOTIFY_CONFIG } from '../src/lib/approval-types.js'
+import {
+  STORAGE_ZONE_PLAN,
+  WAREHOUSE_PLAN,
+  warehouseCodeForMaterialZone,
+} from '../src/lib/warehouse-layout.js'
 
 const prisma = new PrismaClient()
 
-/** 演示基准：8万+件 / 40品种 / 四区库容 */
+/** 演示基准：8万+件 / 40品种 / 两库四区 */
 const CENTER = {
   targetSpecies: 40,
   targetStock: 80_000,
 }
 
-const ZONE_PLAN = [
-  { code: 'A', whCode: 'WH-A', whName: 'A区-抢险类', zoneType: 'DISASTER' as const, area: 12000, capacity: 105000, stockShare: 0.28 },
-  { code: 'B', whCode: 'WH-B', whName: 'B区-救助类', zoneType: 'RESCUE' as const, area: 15000, capacity: 140000, stockShare: 0.32 },
-  { code: 'C', whCode: 'WH-C', whName: 'C区-通用类', zoneType: 'GENERAL' as const, area: 8000, capacity: 70000, stockShare: 0.25 },
-  { code: 'D', whCode: 'WH-D', whName: 'D区-恒温库', zoneType: 'TEMPERATURE' as const, area: 5000, capacity: 35000, stockShare: 0.15 },
-]
 
 const MATERIAL_TEMPLATES: Array<{ name: string; spec: string; unit: string; zoneIdx: number; shelfLife: number; min: number; max: number }> = [
   { name: '救灾专用棉被', spec: '200×150cm', unit: '条', zoneIdx: 1, shelfLife: 60, min: 500, max: 5000 },
@@ -74,6 +74,90 @@ function addMonths(d: Date, months: number) {
   const r = new Date(d)
   r.setMonth(r.getMonth() + months)
   return r
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, '0')
+}
+
+function formatYMD(d: Date) {
+  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`
+}
+
+function formatYYMMDD(d: Date) {
+  return `${String(d.getFullYear()).slice(2)}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`
+}
+
+/** 按库区/效期特征生成接近厂商习惯的批次号（确定性，可复现） */
+function buildRealisticBatchNo(
+  materialIdx: number,
+  tpl: (typeof MATERIAL_TEMPLATES)[number],
+  productionDate: Date,
+  lotSeq: number,
+): string {
+  const ymd = formatYMD(productionDate)
+  const yymmdd = formatYYMMDD(productionDate)
+  const lot = String(lotSeq).padStart(3, '0')
+
+  if (tpl.zoneIdx === 3 || tpl.shelfLife <= 12) {
+    return `${yymmdd}${lot}`
+  }
+  if (tpl.zoneIdx === 2 && tpl.shelfLife <= 36) {
+    return `${ymd}-${String.fromCharCode(65 + (materialIdx + lotSeq) % 3)}`
+  }
+  if (tpl.zoneIdx === 0) {
+    return `WH${yymmdd}-${pad2(lotSeq)}`
+  }
+  return `SC${yymmdd}${String.fromCharCode(65 + (lotSeq % 3))}`
+}
+
+type BatchPlan = {
+  batchNo: string
+  productionDate: Date
+  expiryDate: Date
+  qtyShare: number
+}
+
+/** 同一物资可有多批次（效期错落、数量分摊），用于 FIFO / 临期预警演示 */
+function buildBatchPlans(materialIdx: number, tpl: (typeof MATERIAL_TEMPLATES)[number], now: Date): BatchPlan[] {
+  const expiryProfile = materialIdx % 10
+
+  const single = (expiryDate: Date, lotSeq = 1, qtyShare = 1): BatchPlan[] => {
+    const productionDate = addDays(addMonths(expiryDate, -tpl.shelfLife), -((materialIdx * 5 + lotSeq * 11) % 28))
+    return [{
+      batchNo: buildRealisticBatchNo(materialIdx, tpl, productionDate, lotSeq),
+      productionDate,
+      expiryDate,
+      qtyShare,
+    }]
+  }
+
+  if (materialIdx === 0) {
+    return [
+      ...single(addDays(now, 15), 1, 0.18),
+      ...single(addMonths(now, tpl.shelfLife - 2), 2, 0.82),
+    ]
+  }
+  if (materialIdx === 1) {
+    return [
+      ...single(addDays(now, 45 + materialIdx), 1, 0.25),
+      ...single(addMonths(now, tpl.shelfLife - 1), 2, 0.75),
+    ]
+  }
+  if (materialIdx === 10) {
+    return [
+      ...single(addDays(now, 72), 1, 0.15),
+      ...single(addMonths(now, tpl.shelfLife - 6), 2, 0.35),
+      ...single(addMonths(now, tpl.shelfLife - 1), 3, 0.5),
+    ]
+  }
+  if (materialIdx === 22) {
+    return single(addDays(now, 18), 1)
+  }
+
+  if (expiryProfile === 0) return single(addDays(now, 15))
+  if (expiryProfile === 1 || expiryProfile === 2) return single(addDays(now, 45 + materialIdx * 3))
+  return single(addMonths(now, tpl.shelfLife))
 }
 
 function seedLogDetail(
@@ -148,19 +232,25 @@ async function main() {
   })
 
   const warehouses = []
-  const shelves: Array<{ id: string; code: string; zone: string; warehouseId: string }> = []
-  for (const z of ZONE_PLAN) {
-    const wh = await prisma.warehouse.create({
-      data: { code: z.whCode, name: z.whName, zone: z.zoneType, area: z.area, capacity: z.capacity },
+  const warehouseByCode = new Map<string, { id: string; code: string; name: string }>()
+  for (const wh of WAREHOUSE_PLAN) {
+    const row = await prisma.warehouse.create({
+      data: { code: wh.code, name: wh.name, zone: wh.zoneType, area: wh.area, capacity: wh.capacity },
     })
-    warehouses.push(wh)
+    warehouses.push(row)
+    warehouseByCode.set(wh.code, row)
+  }
+
+  const shelves: Array<{ id: string; code: string; zone: string; warehouseId: string }> = []
+  for (const z of STORAGE_ZONE_PLAN) {
+    const wh = warehouseByCode.get(z.warehouseCode)!
     for (let row = 1; row <= 4; row++) {
       for (let level = 1; level <= 4; level++) {
         const code = `${z.code}-${String(row).padStart(2, '0')}-${level}`
         const shelf = await prisma.shelf.create({
           data: {
             code,
-            name: `${z.whName} ${row}排${level}层`,
+            name: `${z.name} ${row}排${level}层`,
             zone: z.code,
             row: String(row),
             level,
@@ -175,14 +265,13 @@ async function main() {
   }
 
   const categories = []
-  for (let i = 0; i < ZONE_PLAN.length; i++) {
-    const z = ZONE_PLAN[i]
+  for (const z of STORAGE_ZONE_PLAN) {
     const cat = await prisma.materialCategory.create({
       data: {
         code: `MT-${z.code}`,
-        name: z.whName,
+        name: z.name,
         zone: z.zoneType,
-        shelfLifeMonths: 60,
+        shelfLifeMonths: z.zoneType === 'TEMPERATURE' ? 24 : 60,
         safetyStockMin: 1000,
         safetyStockMax: 50000,
       },
@@ -190,7 +279,7 @@ async function main() {
     categories.push(cat)
   }
 
-  const zoneMaterialCounts = ZONE_PLAN.map((_, zi) => MATERIAL_TEMPLATES.filter((t) => t.zoneIdx === zi).length)
+  const zoneMaterialCounts = STORAGE_ZONE_PLAN.map((_, zi) => MATERIAL_TEMPLATES.filter((t) => t.zoneIdx === zi).length)
 
   const now = new Date()
   let stockAllocated = 0
@@ -198,7 +287,7 @@ async function main() {
 
   for (let i = 0; i < MATERIAL_TEMPLATES.length; i++) {
     const tpl = MATERIAL_TEMPLATES[i]
-    const zone = ZONE_PLAN[tpl.zoneIdx]
+    const zone = STORAGE_ZONE_PLAN[tpl.zoneIdx]
     const cat = categories[tpl.zoneIdx]
     const code = `YJ-${zone.code}-${String(i + 1).padStart(3, '0')}`
     const material = await prisma.material.create({
@@ -215,69 +304,85 @@ async function main() {
     materials.push(material)
 
     const zoneShelves = shelves.filter((s) => s.zone === zone.code)
-    const shelf = zoneShelves[i % zoneShelves.length]
 
     const zoneTarget = CENTER.targetStock * zone.stockShare
     const qty = Math.round(zoneTarget / zoneMaterialCounts[tpl.zoneIdx])
     stockAllocated += qty
 
-    const expiryProfile = i % 10
-    let expiryDate: Date
-    if (expiryProfile === 0) expiryDate = addDays(now, 15)
-    else if (expiryProfile === 1 || expiryProfile === 2) expiryDate = addDays(now, 45 + i * 3)
-    else expiryDate = addMonths(now, tpl.shelfLife)
+    const batchPlans = buildBatchPlans(i, tpl, now)
+    let remainingQty = qty
+    let qrSeq = 1
 
-    const batchNo = `BATCH-${zone.code}-2026${String((i % 12) + 1).padStart(2, '0')}`
-    const productionDate = addMonths(expiryDate, -tpl.shelfLife)
-    const batch = await prisma.materialBatch.create({
-      data: {
-        batchNo,
-        materialId: material.id,
-        supplierId: supplier.id,
-        productionDate,
-        expiryDate,
-      },
-    })
+    for (let bi = 0; bi < batchPlans.length; bi++) {
+      const plan = batchPlans[bi]
+      const batchQty = bi === batchPlans.length - 1
+        ? remainingQty
+        : Math.max(1, Math.round(qty * plan.qtyShare))
+      remainingQty -= batchQty
 
-    const stockItem = await prisma.stockItem.create({
-      data: {
-        qrCode: `${code}-${batchNo}-001`,
-        materialId: material.id,
-        batchId: batch.id,
-        shelfId: shelf.id,
-        quantity: qty,
-        status: 'IN_STOCK',
-      },
-    })
+      const batch = await prisma.materialBatch.create({
+        data: {
+          batchNo: plan.batchNo,
+          materialId: material.id,
+          supplierId: supplier.id,
+          productionDate: plan.productionDate,
+          expiryDate: plan.expiryDate,
+        },
+      })
 
-    await prisma.stockMovement.create({
-      data: {
-        type: 'INBOUND',
-        stockItemId: stockItem.id,
-        quantity: qty,
-        afterQty: qty,
-        toShelfId: shelf.id,
-        operatorId: admin.id,
-        note: `采购入库赋码 ${stockItem.qrCode}`,
-      },
-    })
+      const shelfForBatch = zoneShelves[(i + bi) % zoneShelves.length]
+      const stockItem = await prisma.stockItem.create({
+        data: {
+          qrCode: genQrCode(code, plan.batchNo, qrSeq),
+          materialId: material.id,
+          batchId: batch.id,
+          shelfId: shelfForBatch.id,
+          quantity: batchQty,
+          status: 'IN_STOCK',
+        },
+      })
+      qrSeq++
+
+      await prisma.stockMovement.create({
+        data: {
+          type: 'INBOUND',
+          stockItemId: stockItem.id,
+          quantity: batchQty,
+          afterQty: batchQty,
+          toShelfId: shelfForBatch.id,
+          operatorId: admin.id,
+          note: `采购入库赋码 ${stockItem.qrCode}`,
+        },
+      })
+    }
   }
 
   // 低库存物资（医用口罩库存故意偏低，并从高库存物资微调总量）
   const maskMaterial = materials.find((m) => m.name === '医用口罩')
   if (maskMaterial) {
-    const maskItem = await prisma.stockItem.findFirst({ where: { materialId: maskMaterial.id } })
-    if (maskItem) {
-      const delta = 3200 - maskItem.quantity
-      await prisma.stockItem.update({ where: { id: maskItem.id }, data: { quantity: 3200 } })
+    const maskItems = await prisma.stockItem.findMany({
+      where: { materialId: maskMaterial.id },
+      orderBy: { quantity: 'desc' },
+    })
+    const totalMask = maskItems.reduce((sum, item) => sum + item.quantity, 0)
+    const targetMask = 3200
+    if (totalMask > targetMask && maskItems.length) {
+      let toReduce = totalMask - targetMask
+      for (const item of maskItems) {
+        if (toReduce <= 0) break
+        const cut = Math.min(item.quantity - 1, toReduce)
+        if (cut <= 0) continue
+        await prisma.stockItem.update({ where: { id: item.id }, data: { quantity: item.quantity - cut } })
+        toReduce -= cut
+      }
       const sandMaterial = materials.find((m) => m.name === '防汛沙袋')
       const sandItem = sandMaterial
-        ? await prisma.stockItem.findFirst({ where: { materialId: sandMaterial.id } })
+        ? await prisma.stockItem.findFirst({ where: { materialId: sandMaterial.id }, orderBy: { quantity: 'desc' } })
         : null
-      if (sandItem && delta > 0) {
+      if (sandItem) {
         await prisma.stockItem.update({
           where: { id: sandItem.id },
-          data: { quantity: Math.max(sandItem.quantity - delta, 1000) },
+          data: { quantity: sandItem.quantity + (totalMask - targetMask) },
         })
       }
     }
@@ -296,7 +401,10 @@ async function main() {
   ]
   for (const a of alerts) {
     const mat = materials[a.materialIdx]
-    const batch = await prisma.materialBatch.findFirst({ where: { materialId: mat.id } })
+    const batch = await prisma.materialBatch.findFirst({
+      where: { materialId: mat.id },
+      orderBy: a.type === 'EXPIRY' ? { expiryDate: 'asc' } : { createdAt: 'asc' },
+    })
     await prisma.alert.create({
       data: { type: a.type, level: a.level, materialId: mat.id, batchId: batch?.id, message: a.msg },
     })
@@ -311,7 +419,7 @@ async function main() {
     status: 'DRAFT' | 'PENDING' | 'RECEIVING' | 'COMPLETED' | 'CANCELLED'
     contractNo?: string
     remark?: string
-    lines: Array<{ materialIdx: number; expectedQty: number; actualQty?: number; batchNo?: string }>
+    lines: Array<{ materialIdx: number; expectedQty: number; actualQty?: number; batchNo?: string; productionDate?: Date; expiryDate?: Date }>
   }> = [
     {
       orderNo: 'CG20260629001',
@@ -372,7 +480,9 @@ async function main() {
           materialIdx: 15,
           expectedQty: 2000,
           actualQty: 2000,
-          batchNo: 'BATCH-C-202601',
+          batchNo: '20250318-B',
+          productionDate: new Date('2025-03-18'),
+          expiryDate: addMonths(new Date('2025-03-18'), MATERIAL_TEMPLATES[15].shelfLife),
         },
       ],
     },
@@ -380,11 +490,14 @@ async function main() {
 
   for (const order of inboundDemo) {
     const approved = order.status === 'RECEIVING' || order.status === 'COMPLETED'
+    const firstMaterialIdx = order.lines[0]?.materialIdx ?? 0
+    const whCode = warehouseCodeForMaterialZone(MATERIAL_TEMPLATES[firstMaterialIdx]?.zoneIdx ?? 2)
     await prisma.inboundOrder.create({
       data: {
         orderNo: order.orderNo,
         type: 'PURCHASE',
         status: order.status,
+        warehouseId: warehouseByCode.get(whCode)?.id,
         supplierId: supplier.id,
         contractNo: order.contractNo,
         remark: order.remark,
@@ -397,8 +510,8 @@ async function main() {
             expectedQty: line.expectedQty,
             actualQty: line.actualQty,
             batchNo: line.batchNo,
-            productionDate: line.batchNo ? addMonths(now, -12) : undefined,
-            expiryDate: line.batchNo ? addMonths(now, 48) : undefined,
+            productionDate: line.productionDate,
+            expiryDate: line.expiryDate,
           })),
         },
       },
@@ -677,7 +790,7 @@ async function main() {
   console.log('✅ Seed complete — 方案基准数据')
   console.log(`   物资品种: ${materials.length} 种`)
   console.log(`   库存总量: ~${stockAllocated.toLocaleString()} 件`)
-  console.log(`   库区: A/B/C/D 四区 · 货位 ${shelves.length} 个`)
+  console.log(`   库房: 中心主库 + 战略备库 · A/B/C/D 四区分区 · 货位 ${shelves.length} 个`)
   console.log(`   入库单: ${inboundDemo.length} 单（收货中 ${inboundDemo.filter((o) => o.status === 'RECEIVING').length} · 待审核 ${inboundDemo.filter((o) => o.status === 'PENDING').length}）`)
   console.log(`   出库单: ${outboundDemo.length} 单（已审核 ${outboundDemo.filter((o) => o.status === 'APPROVED').length} · 拣货中 ${outboundDemo.filter((o) => o.status === 'PICKING').length}）`)
   console.log(`   预警: ${alerts.length} 条`)

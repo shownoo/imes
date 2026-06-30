@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@apollo/client'
 import { CheckCircle2, ExternalLink, XCircle } from 'lucide-react'
-import { PageHeader, Button, Badge, Card, CardContent, DataTable } from 'components/common'
+import { PageHeader, Button, Badge, Card, CardContent, DataTable, ToolbarButton } from 'components/common'
 import { formatDate } from 'lib/utils'
 import type { ApprovalInboxItem } from 'lib/approval-flow'
 import { DesktopNotifyToggle } from 'hooks/use-approval-desktop-notify'
@@ -39,9 +39,7 @@ export default function TasksIndex() {
         action={
           <div className="flex items-center gap-3">
             <DesktopNotifyToggle />
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              刷新
-            </Button>
+            <ToolbarButton onClick={() => refetch()}>刷新</ToolbarButton>
           </div>
         }
       />

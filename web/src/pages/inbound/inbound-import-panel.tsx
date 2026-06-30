@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { FileImage, FileText, Loader2 } from 'lucide-react'
-import { Button } from 'components/common'
+import { Button, ToolbarButton } from 'components/common'
 import { cn } from 'lib/utils'
 
 export type ImportResult = {
@@ -90,27 +90,15 @@ export function InboundImportActions({
         dragOver && 'bg-primary/[0.04] ring-1 ring-primary/20 ring-inset',
       )}
     >
-      <div className="flex items-center gap-1.5">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-          disabled={isParsing}
-          onClick={() => pickFile('.pdf,application/pdf', onImportPdf)}
-        >
+      <div className="flex items-center gap-0.5">
+        <ToolbarButton disabled={isParsing} onClick={() => pickFile('.pdf,application/pdf', onImportPdf)}>
           <FileText className="size-3.5" />
           PDF
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-          disabled={isParsing}
-          onClick={() => pickFile('.png,.jpg,.jpeg,.webp,image/*', onImportImage)}
-        >
-          <FileImage className="size-3.5" />图片</Button>
+        </ToolbarButton>
+        <ToolbarButton disabled={isParsing} onClick={() => pickFile('.png,.jpg,.jpeg,.webp,image/*', onImportImage)}>
+          <FileImage className="size-3.5" />
+          图片
+        </ToolbarButton>
       </div>
 
       {statusText && (
@@ -123,7 +111,7 @@ export function InboundImportActions({
           {isParsing && <Loader2 className="size-3 shrink-0 animate-spin" />}
           <span className="truncate">{statusText}</span>
           {parseError && (
-            <button type="button" className="shrink-0 underline-offset-2 hover:underline" onClick={onDismissError}>'关闭'</button>
+            <button type="button" className="shrink-0 underline-offset-2 hover:underline" onClick={onDismissError}>关闭</button>
           )}
         </p>
       )}

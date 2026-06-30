@@ -15,6 +15,7 @@ import {
   VIEW_PERSPECTIVES,
   type ContentMarginId,
   type ContentMaxWidthId,
+  type NavLayoutId,
   type LeaderStylePreset,
   type LeaderStylePresetId,
   type ViewPerspectiveId,
@@ -40,6 +41,7 @@ type WorkspaceContextValue = {
   setVisualVariant: (variant: ChetaVisualVariantId) => void
   setMargin: (margin: ContentMarginId) => void
   setMaxWidth: (maxWidth: ContentMaxWidthId) => void
+  setNavLayout: (navLayout: NavLayoutId) => void
   toggleWidget: (id: WorkspaceWidgetId) => void
   moveWidget: (id: WorkspaceWidgetId, dir: -1 | 1) => void
   applyPerspective: (id: ViewPerspectiveId) => void
@@ -64,7 +66,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     applyLayoutPreferences(prefs)
-  }, [prefs.margin, prefs.maxWidth])
+  }, [prefs.margin, prefs.maxWidth, prefs.navLayout])
 
   /** 启动时：若目录选了 Geist Dark + Apple 蓝等组合，但 preset 仍是旧黑金，则自动纠正 */
   useEffect(() => {
@@ -121,6 +123,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     persist({ ...prefs, maxWidth })
   }, [prefs, persist])
 
+  const setNavLayout = useCallback((navLayout: NavLayoutId) => {
+    persist({ ...prefs, navLayout })
+  }, [prefs, persist])
+
   const toggleWidget = useCallback((id: WorkspaceWidgetId) => {
     persist({
       ...prefs,
@@ -145,7 +151,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       ...w,
       visible: p.visible.includes(w.id),
     }))
-    persist({ margin: p.margin, maxWidth: p.maxWidth, widgets })
+    persist({ ...prefs, margin: p.margin, maxWidth: p.maxWidth, widgets })
   }, [persist])
 
   const resetAll = useCallback(() => {
@@ -162,11 +168,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
-      theme, variant, prefs, setThemeId, setVisualVariant, setMargin, setMaxWidth,
+      theme, variant, prefs, setThemeId, setVisualVariant, setMargin, setMaxWidth, setNavLayout,
       toggleWidget, moveWidget, applyPerspective, resetAll, visibleWidgets, toggleDarkMode,
     }),
     [
-      theme, variant, prefs, setThemeId, setVisualVariant, setMargin, setMaxWidth,
+      theme, variant, prefs, setThemeId, setVisualVariant, setMargin, setMaxWidth, setNavLayout,
       toggleWidget, moveWidget, applyPerspective, resetAll, visibleWidgets, toggleDarkMode,
     ],
   )

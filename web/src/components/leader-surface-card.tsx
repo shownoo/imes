@@ -10,6 +10,8 @@ type LeaderSurfaceCardProps = {
   /** 表单区加 leader-form-surface，启用设计语言对应的输入框材质 */
   formSurface?: boolean
   interactive?: boolean
+  /** 数据列表等 — 单层表面、无阴影/光晕，避免「套娃」层叠感 */
+  flat?: boolean
 }
 
 /** 领导端面板/表单/表格 — 随 data-ui-design-system 切换材质（M3 / HIG / Fluent / Carbon …） */
@@ -19,6 +21,7 @@ export function LeaderSurfaceCard({
   contentClassName,
   formSurface,
   interactive,
+  flat,
 }: LeaderSurfaceCardProps) {
   const { features } = useUiDesignSystem()
 
@@ -27,11 +30,12 @@ export function LeaderSurfaceCard({
       className={cn(
         'leader-panel-card cheta-leader-panel',
         formSurface && 'leader-form-card',
-        features.layeredSurface && 'ui-ds-layered-card',
+        features.layeredSurface && !flat && 'ui-ds-layered-card',
+        flat && 'leader-surface-flat',
         className,
       )}
-      interactive={interactive ?? false}
-      kpiHero={features.glassSheen}
+      interactive={flat ? false : (interactive ?? false)}
+      kpiHero={flat ? false : features.glassSheen}
     >
       <div className={cn('relative', formSurface && 'leader-form-surface', contentClassName)}>
         {children}

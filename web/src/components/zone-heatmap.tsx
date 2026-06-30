@@ -1,13 +1,8 @@
-import { cn, formatNumber } from 'lib/utils'
+import { cn, formatNumber, STORAGE_ZONE_LABELS } from 'lib/utils'
 
 type ZoneItem = { zone: string; label: string; quantity: number; capacity?: number }
 
-const ZONE_LABELS: Record<string, string> = {
-  A: 'A区·抢险类',
-  B: 'B区·救助类',
-  C: 'C区·通用类',
-  D: 'D区·恒温库',
-}
+const ZONE_LABELS = STORAGE_ZONE_LABELS
 
 function normalizeItems(
   data: Array<ZoneItem> | Record<string, number>,
@@ -159,7 +154,7 @@ export function ZoneHeatmap({
         className="mt-4 flex items-center justify-between gap-3 text-[10px]"
         style={{ color: 'var(--leader-text-muted)' }}
       >
-        <span>'占用率热力'</span>
+        <span>占用率热力</span>
         <div className="flex flex-1 items-center justify-end gap-2">
           <span>低</span>
           <div

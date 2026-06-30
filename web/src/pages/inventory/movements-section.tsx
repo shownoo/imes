@@ -48,29 +48,32 @@ export function MovementsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">'全链路库存变动 · 共'<span className="font-medium tabular-nums text-foreground">{total}</span> 条
-          {movements.length < total && ` · 当前显示 ${movements.length} 条`}
-        </p>
-        <div className="relative max-w-xs flex-1 sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-xs lg:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
           <DebounceInput
             key="movements-search"
             className="pl-9"
-            placeholder='搜索物资、二维码、操作人、备注...'
+            placeholder="搜索物资、二维码、操作人、备注..."
             defaultValue={search}
             debounceTime={500}
             onSearch={setSearch}
           />
         </div>
+        <p className="text-sm text-muted-foreground sm:ml-auto">
+          全链路库存变动 · 共 <span className="font-medium tabular-nums text-foreground">{total}</span> 条
+          {movements.length < total && ` · 当前显示 ${movements.length} 条`}
+        </p>
       </div>
 
-      <MovementFilterBar
-        value={typeFilter}
-        options={MOVEMENT_TYPE_FILTERS}
-        onChange={setTypeFilter}
-        counts={typeCounts}
-      />
+      <div className="mb-4">
+        <MovementFilterBar
+          value={typeFilter}
+          options={MOVEMENT_TYPE_FILTERS}
+          onChange={setTypeFilter}
+          counts={typeCounts}
+        />
+      </div>
 
       <DataTable
         loading={loading}
@@ -78,6 +81,7 @@ export function MovementsSection() {
           {
             key: 'createdAt',
             title: '时间',
+            tip: '库存变动发生时间',
             render: (r) => (
               <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                 {formatDateTime(String(r.createdAt))}
@@ -87,11 +91,13 @@ export function MovementsSection() {
           {
             key: 'type',
             title: '类型',
+            tip: '入库、出库、拆零、移库等变动类型',
             render: (r) => <MovementTypeBadge type={String(r.type)} />,
           },
           {
             key: 'material',
             title: '物资',
+            tip: '变动涉及的物资',
             render: (r) => {
               const material = (r.stockItem as { material?: { name?: string; code?: string } })?.material
               return (
@@ -105,6 +111,7 @@ export function MovementsSection() {
           {
             key: 'qrCode',
             title: '二维码',
+            tip: '点击跳转扫码追溯页',
             render: (r) => {
               const qr = String((r.stockItem as { qrCode?: string })?.qrCode ?? '')
               return (
@@ -122,6 +129,7 @@ export function MovementsSection() {
           {
             key: 'quantity',
             title: '数量变化',
+            tip: '变动前后数量对比',
             render: (r) => (
               <span className="tabular-nums text-sm">
                 {formatQtyChange(r.beforeQty, r.afterQty, r.quantity)}
@@ -131,11 +139,13 @@ export function MovementsSection() {
           {
             key: 'operator',
             title: '操作人',
+            tip: '执行该操作的用户',
             render: (r) => String((r.operator as { name?: string })?.name ?? '—'),
           },
           {
             key: 'ref',
             title: '关联',
+            tip: '关联的入库单或出库单',
             render: (r) => {
               const refType = r.refType ? REF_TYPE_LABELS[String(r.refType)] ?? String(r.refType) : null
               if (!refType) return <span className="text-muted-foreground">—</span>
@@ -145,6 +155,7 @@ export function MovementsSection() {
           {
             key: 'note',
             title: '备注',
+            tip: '操作补充说明',
             render: (r) => (
               <span className="line-clamp-2 max-w-[14rem] text-xs text-muted-foreground" title={String(r.note ?? '')}>
                 {String(r.note ?? '—')}

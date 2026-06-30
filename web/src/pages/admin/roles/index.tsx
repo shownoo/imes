@@ -28,6 +28,7 @@ export default function RolesIndex() {
   return (
     <div>
       <ListToolbar
+        className="mb-4"
         action={canWrite ? (
           <Button onClick={() => navigate('/admin/roles/create')}>
             <Plus className="size-4" /> 新增角色

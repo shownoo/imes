@@ -58,9 +58,19 @@ body[data-ui-design-system='material-3'] .ui-ds-layered-card > * {
 body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-form-surface input:focus-visible,
 body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-form-surface textarea:focus-visible,
 body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
-  border-color: var(--leader-accent, hsl(var(--primary)));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 22%, transparent);
+  border-color: color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 50%, hsl(var(--border))) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 14%, transparent) !important;
   outline: none;
+}
+
+/* M3 · 新建/修改 — 纯白卡片表面，无渐变叠层 */
+body[data-ui-design-system='material-3'] .leader-surface-flat.leader-form-card {
+  background: hsl(var(--card)) !important;
+  border-color: color-mix(in srgb, hsl(var(--border)) 40%, transparent) !important;
+}
+
+body[data-ui-design-system='material-3'] .leader-surface-flat.leader-form-card::before {
+  content: none;
 }
 
 body[data-ui-design-system='material-3'] [data-cheta-layout] .leader-page-actions .bg-primary {
@@ -106,28 +116,44 @@ body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] .
   );
 }
 
+/* Apple HIG · 新建/修改 — 单层白色表面，输入框不另起底色（对齐 iOS/macOS Settings） */
+body[data-ui-design-system='apple-hig'] .leader-surface-flat.leader-form-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: hsl(var(--card)) !important;
+  border-color: color-mix(in srgb, hsl(var(--border)) 42%, transparent) !important;
+}
+
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] .overview-card.leader-form-card.leader-surface-flat::after {
+  content: none;
+}
+
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface input:not([type='checkbox']):not([type='radio']),
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface textarea,
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface button[role='combobox'] {
-  backdrop-filter: blur(12px) saturate(1.25);
-  -webkit-backdrop-filter: blur(12px) saturate(1.25);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
-}
-
-body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] [data-cheta-layout] .leader-form-surface input:not([type='checkbox']):not([type='radio']),
-body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] [data-cheta-layout] .leader-form-surface textarea,
-body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] [data-cheta-layout] .leader-form-surface button[role='combobox'] {
-  background: rgba(255, 255, 255, 0.42);
-  border-color: rgba(255, 255, 255, 0.58);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  background: transparent;
+  border-color: color-mix(in srgb, hsl(var(--border)) 52%, transparent);
 }
 
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface input:focus-visible,
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface textarea:focus-visible,
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
-  border-color: color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 42%, transparent);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 16%, transparent),
-    0 1px 0 rgba(255, 255, 255, 0.75) inset;
+  background: hsl(var(--card));
+  border-color: color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 38%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--leader-accent, hsl(var(--primary))) 14%, transparent);
+}
+
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface .grid-table-frame {
+  background: transparent;
+  border-color: color-mix(in srgb, hsl(var(--border)) 45%, transparent);
+}
+
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface .grid-table-frame input,
+body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-form-surface .grid-table-frame button[role='combobox'] {
+  background: transparent;
 }
 
 body[data-ui-design-system='apple-hig'] [data-cheta-layout] .leader-page-actions .border-input {
@@ -145,6 +171,36 @@ body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] .
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 8px 32px rgba(15, 23, 42, 0.06);
+}
+
+/* Apple HIG · 数据列表 — 无竖线、发丝分隔、编码列 SF Pro */
+body[data-ui-design-system='apple-hig'] .leader-surface-flat.overview-card {
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+body[data-ui-design-system='apple-hig'] .imes-data-table thead th {
+  border-bottom-color: color-mix(in srgb, hsl(var(--border)) 45%, transparent);
+  font-weight: 500;
+}
+
+body[data-ui-design-system='apple-hig'] .imes-data-table tbody tr {
+  border-bottom-color: color-mix(in srgb, hsl(var(--border)) 32%, transparent);
+  transition: background-color 0.16s ease;
+}
+
+body[data-ui-design-system='apple-hig'] .imes-data-table tbody tr:hover {
+  background: color-mix(in srgb, hsl(var(--foreground)) 3%, transparent);
+}
+
+body[data-ui-design-system='apple-hig'][data-v6-overview-theme='liquid-glass'] .imes-data-table tbody tr:hover {
+  background: rgba(10, 132, 255, 0.035);
+}
+
+body[data-ui-design-system='apple-hig'] .imes-data-table .font-number {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', var(--leader-font-number);
+  font-weight: 500;
+  letter-spacing: -0.015em;
 }
 
 /* ══════════════════════════════════════

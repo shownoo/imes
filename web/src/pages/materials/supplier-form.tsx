@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
-import { FormPage, FormField, FormGrid } from 'components/form-page'
-import { Button } from 'components/common'
+import {
+  FormPage,
+  FormSection,
+  FormStack,
+  InsetFormGroup,
+  InsetFormRow,
+  insetFormInputClass,
+} from 'components/form-page'
+import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { GET_SUPPLIERS, ADD_SUPPLIER } from './queries'
 
@@ -56,26 +63,42 @@ export default function SupplierForm() {
 
   return (
     <FormPage
-      title={isEdit ? '编辑供应商' : '新增供应商'}
+      mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=suppliers"
       backLabel='供应商'
       footer={
-        <>
-          <Button variant="outline" onClick={() => navigate('/materials?tab=suppliers')}>取消'</Button>
-          <Button onClick={handleSave} disabled={saving}>保存</Button>
-        </>
+        <FormProcessButtons
+          onCancel={() => navigate('/materials?tab=suppliers')}
+          onSubmit={handleSave}
+          loading={saving}
+          submitTitle="保存"
+        />
       }
     >
-      <div className="space-y-4">
-        <FormGrid>
-          <FormField label='供应商编码' required><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></FormField>
-          <FormField label='供应商名称' required><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></FormField>
-          <FormField label='联系人'><Input value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} /></FormField>
-          <FormField label='联系电话'><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></FormField>
-        </FormGrid>
-        <FormField label='地址'><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></FormField>
-        <FormField label='资质证照'><Input value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} /></FormField>
-      </div>
+      <FormStack>
+        <FormSection title="供应商信息" desc="编码、联系方式与资质" inset>
+          <InsetFormGroup>
+            <InsetFormRow label='供应商编码' required>
+              <Input className={insetFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='供应商名称' required>
+              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='联系人'>
+              <Input className={insetFormInputClass} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='联系电话'>
+              <Input className={insetFormInputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='地址'>
+              <Input className={insetFormInputClass} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='资质证照'>
+              <Input className={insetFormInputClass} value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} />
+            </InsetFormRow>
+          </InsetFormGroup>
+        </FormSection>
+      </FormStack>
     </FormPage>
   )
 }

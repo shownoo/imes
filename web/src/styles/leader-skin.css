@@ -39,6 +39,13 @@ body[data-cheta-visual='institutional'] .leader-kpi-card::before {
   max-width: var(--leader-content-max, var(--cheta-page-content-max, 1440px));
 }
 
+.leader-content-pad {
+  padding-left: var(--leader-content-padding, 24px);
+  padding-right: var(--leader-content-padding, 24px);
+  padding-top: calc(var(--leader-content-padding, 24px) * 0.85);
+  padding-bottom: calc(var(--leader-content-padding, 24px) * 0.85);
+}
+
 body[data-cheta-nav-pattern='block'] .leader-nav a.bg-primary\/15,
 body[data-cheta-nav-pattern='block'] .leader-nav a[class*='text-primary'] {
   background: var(--cheta-nav-accent, hsl(var(--primary))) !important;

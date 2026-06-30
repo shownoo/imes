@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
-import { FormPage, FormField, FormGrid } from 'components/form-page'
-import { Button } from 'components/common'
+import {
+  FormPage,
+  FormSection,
+  FormStack,
+  InsetFormGroup,
+  InsetFormRow,
+  insetFormInputClass,
+  insetFormSelectTriggerClass,
+} from 'components/form-page'
+import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { ImageGallery, type GalleryImage } from 'components/image-gallery'
-import {
-  GET_MATERIAL, GET_CATEGORIES, GET_SUPPLIERS, ADD_MATERIAL,
-} from './queries'
+import { GET_MATERIAL, GET_CATEGORIES, GET_SUPPLIERS, ADD_MATERIAL } from './queries'
 
 function imagesFromRecord(record: Record<string, unknown>): GalleryImage[] {
   const rows = record.images as Array<{ file?: { id?: string; url?: string; name?: string } }> | undefined
@@ -82,42 +88,57 @@ export default function MaterialForm() {
 
   return (
     <FormPage
-      title={isEdit ? '编辑物资档案' : '新增物资档案'}
+      mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=materials"
       backLabel='物资档案'
-      wide
       footer={
-        <>
-          <Button variant="outline" onClick={() => navigate('/materials?tab=materials')}>取消'</Button>
-          <Button onClick={handleSave} disabled={saving}>保存</Button>
-        </>
+        <FormProcessButtons
+          onCancel={() => navigate('/materials?tab=materials')}
+          onSubmit={handleSave}
+          loading={saving}
+          submitTitle="保存"
+        />
       }
     >
-      <FormGrid>
-        <FormField label='物资编码' required><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></FormField>
-        <FormField label='物资名称' required><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></FormField>
-        <FormField label='规格'><Input value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} /></FormField>
-        <FormField label='单位'><Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></FormField>
-        <FormField label='生产厂家'><Input value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} /></FormField>
-        <FormField label='物资大类' required>
-          <Select value={form.categoryId} onValueChange={(v) => setForm({ ...form, categoryId: v })}>
-            <SelectTrigger><SelectValue placeholder='请选择' /></SelectTrigger>
-            <SelectContent>{categories.map((c) => <SelectItem key={String(c.id)} value={String(c.id)}>{String(c.name)}</SelectItem>)}</SelectContent>
-          </Select>
-        </FormField>
-        <FormField label='默认供应商' className="col-span-2">
-          <Select value={form.supplierId || 'none'} onValueChange={(v) => setForm({ ...form, supplierId: v === 'none' ? '' : v })}>
-            <SelectTrigger><SelectValue placeholder='无' /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">无</SelectItem>
-              {suppliers.map((s) => <SelectItem key={String(s.id)} value={String(s.id)}>{String(s.name)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </FormField>
-        <FormField label='物资图片' className="col-span-2">
-          <ImageGallery value={images} onChange={setImages} />
-        </FormField>
-      </FormGrid>
+      <FormStack>
+        <FormSection title="物资信息" desc="编码、规格、大类与供应商" inset>
+          <InsetFormGroup>
+            <InsetFormRow label='物资编码' required>
+              <Input className={insetFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='物资名称' required>
+              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='规格'>
+              <Input className={insetFormInputClass} value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='单位'>
+              <Input className={insetFormInputClass} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='生产厂家'>
+              <Input className={insetFormInputClass} value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
+            </InsetFormRow>
+            <InsetFormRow label='物资大类' required>
+              <Select value={form.categoryId} onValueChange={(v) => setForm({ ...form, categoryId: v })}>
+                <SelectTrigger className={insetFormSelectTriggerClass}><SelectValue placeholder='请选择' /></SelectTrigger>
+                <SelectContent>{categories.map((c) => <SelectItem key={String(c.id)} value={String(c.id)}>{String(c.name)}</SelectItem>)}</SelectContent>
+              </Select>
+            </InsetFormRow>
+            <InsetFormRow label='默认供应商'>
+              <Select value={form.supplierId || 'none'} onValueChange={(v) => setForm({ ...form, supplierId: v === 'none' ? '' : v })}>
+                <SelectTrigger className={insetFormSelectTriggerClass}><SelectValue placeholder='无' /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">无</SelectItem>
+                  {suppliers.map((s) => <SelectItem key={String(s.id)} value={String(s.id)}>{String(s.name)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </InsetFormRow>
+            <InsetFormRow label='物资图片' block>
+              <ImageGallery value={images} onChange={setImages} />
+            </InsetFormRow>
+          </InsetFormGroup>
+        </FormSection>
+      </FormStack>
     </FormPage>
   )
 }

@@ -90,7 +90,7 @@ body[data-cheta-visual='minimal'] .overview-card:hover {
 }
 
 [data-cheta-layout] .leader-page-toolbar {
-  border-bottom: 1px solid var(--leader-card-border, var(--cheta-card-border-strong, hsl(var(--border))));
+  padding-bottom: 0.25rem;
 }
 
 [data-cheta-layout] .leader-form-grid {
@@ -100,4 +100,81 @@ body[data-cheta-visual='minimal'] .overview-card:hover {
 body[data-v6-overview-theme='hermes-blue'] .leader-panel-card {
   backdrop-filter: saturate(200%) blur(28px);
   -webkit-backdrop-filter: saturate(200%) blur(28px);
+}
+
+/* 扁平数据列表 — 单层表面，无阴影抬升/光晕（Apple Inset Grouped List） */
+.leader-surface-flat.overview-card,
+.leader-surface-flat.leader-panel-card {
+  box-shadow: none !important;
+  transform: none !important;
+  border-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent) !important;
+}
+
+.leader-surface-flat.overview-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 新建/修改表单 — 扁平表面与列表 DataTable 一致，仅保留输入区材质 */
+.leader-surface-flat.leader-form-card {
+  box-shadow: none !important;
+  transform: none !important;
+  background: hsl(var(--card)) !important;
+  border-color: color-mix(in srgb, hsl(var(--border)) 42%, transparent) !important;
+}
+
+[data-cheta-layout] .leader-form-surface .leader-form-grid {
+  gap: var(--leader-grid-gap, 12px);
+}
+
+/* 表单输入 — 白底中性描边，无阴影叠层 */
+[data-cheta-layout] .leader-form-surface input:not([type='checkbox']):not([type='radio']),
+[data-cheta-layout] .leader-form-surface textarea,
+[data-cheta-layout] .leader-form-surface button[role='combobox'] {
+  background: var(--ui-ds-form-input-bg, hsl(var(--background))) !important;
+  border-color: var(--ui-ds-form-input-border, color-mix(in srgb, hsl(var(--border)) 65%, transparent)) !important;
+  box-shadow: none !important;
+}
+
+[data-cheta-layout] .leader-form-surface input:focus-visible,
+[data-cheta-layout] .leader-form-surface textarea:focus-visible,
+[data-cheta-layout] .leader-form-surface button[role='combobox']:focus-visible {
+  border-color: color-mix(in srgb, hsl(var(--primary)) 45%, hsl(var(--border))) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 12%, transparent) !important;
+  outline: none;
+}
+
+[data-cheta-layout] .leader-form-body {
+  width: 100%;
+}
+
+/* iOS Inset Grouped List — 标签左 / 值右 / 发丝分隔 / 无独立 input 框 */
+.inset-form-group > .inset-form-row:not(:last-child) {
+  border-bottom: 1px solid color-mix(in srgb, hsl(var(--border)) 38%, transparent);
+}
+
+.inset-form-group > .inset-form-row:focus-within {
+  background: color-mix(in srgb, hsl(var(--foreground)) 2.5%, transparent);
+}
+
+.inset-form-group .inset-form-control,
+.inset-form-group input:not([type='checkbox']):not([type='radio']),
+.inset-form-group button[role='combobox'] {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.inset-form-group input:focus-visible,
+.inset-form-group button[role='combobox']:focus-visible {
+  box-shadow: none !important;
+}
+
+/* 数据表 — 覆盖 shadcn 默认斑马/hover，统一透明行 + 发丝分隔 */
+.imes-data-table tbody tr {
+  background-color: transparent;
+}
+
+.imes-data-table tbody tr:hover {
+  background-color: color-mix(in srgb, hsl(var(--foreground)) 3.5%, transparent);
 }

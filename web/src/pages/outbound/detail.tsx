@@ -180,7 +180,7 @@ export default function OutboundDetail() {
 
   return (
     <DocumentPage
-      title={`出库单 ${String(order.orderNo ?? '')}`}
+      title={String(order.orderNo ?? '')}
       backTo="/outbound"
       backLabel='出库管理'
       wide
