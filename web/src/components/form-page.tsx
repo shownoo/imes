@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from 'components/ui/button'
+import { CompactPageToolbar } from 'components/compact-page-toolbar'
 import { InfoTip } from 'components/info-tip'
 import { Label } from 'components/ui/label'
 import { LeaderSurfaceCard } from 'components/leader-surface-card'
@@ -12,6 +13,39 @@ export {
   insetFormInputClass,
   insetFormSelectTriggerClass,
 } from 'components/inset-form-list'
+
+export {
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  DocumentLinesSection,
+  GroupedFormRemark,
+  groupedFormInputClass,
+  groupedFormSelectTriggerClass,
+  groupedFormReadonlyClass,
+  GroupedFormReadonly,
+  GroupedFormReadonlyField,
+} from 'components/grouped-form'
+
+export { DatePicker, InlineDatePicker, todayDateStr, localDateToIso, parseLocalDateStr } from 'components/inline-date-picker'
+export type { DatePickerProps, InlineDatePickerProps } from 'components/inline-date-picker'
+
+export {
+  DocumentDetailMeta,
+  DocumentDetailMetaField,
+  DocumentDetailStack,
+  DocumentDetailSection,
+} from 'components/document-detail-meta'
+
+export {
+  DocumentDetailPageStack,
+  DocumentDetailSection as InsetDocumentSection,
+  DocumentDetailGroup,
+  DocumentDetailRow,
+  insetDetailValueClass,
+  insetDetailValuePrimaryClass,
+} from 'components/document-detail-inset'
 
 export function FormField({ label, tip, required, children, className }: {
   label: string
@@ -48,18 +82,39 @@ export function FormGrid({ className, children, ...props }: React.HTMLAttributes
   )
 }
 
-/** 表单分区 — 独立卡片 + 轻量标题 */
+/** 表单分区 — 卡片式（默认）或 iOS Settings 分组列表（inset） */
 export function FormSection({ title, desc, tip, children, className, inset, narrow }: {
   title?: string
   desc?: string
   tip?: string
   children: React.ReactNode
   className?: string
-  /** iOS Settings 行内列表 */
+  /** iOS Settings 行内列表 — 标题在组外、无套娃卡片 */
   inset?: boolean
   /** 字段较少的分区收窄宽度 */
   narrow?: boolean
 }) {
+  if (inset) {
+    return (
+      <section className={cn('inset-form-page-section space-y-2', narrow && 'max-w-md', className)}>
+        {(title || tip) && (
+          <header className="flex items-center gap-1 px-4">
+            {title && (
+              <h3 className="text-[13px] font-normal uppercase tracking-wide text-muted-foreground/70">
+                {title}
+              </h3>
+            )}
+            {tip && <InfoTip side="right">{tip}</InfoTip>}
+          </header>
+        )}
+        {children}
+        {desc && (
+          <p className="px-4 text-[13px] leading-relaxed text-muted-foreground/75">{desc}</p>
+        )}
+      </section>
+    )
+  }
+
   return (
     <LeaderSurfaceCard
       formSurface
@@ -67,7 +122,7 @@ export function FormSection({ title, desc, tip, children, className, inset, narr
       contentClassName="p-4"
       className={cn(narrow && 'mx-auto w-full max-w-lg', className)}
     >
-      <section className={cn('space-y-3', inset && 'space-y-2.5')}>
+      <section className="space-y-3">
         {title && (
           <header className="flex flex-wrap items-baseline gap-x-2">
             <div className="flex items-center gap-1.5">
@@ -89,8 +144,13 @@ export function FormSection({ title, desc, tip, children, className, inset, narr
 }
 
 /** 多分区表单纵向堆叠 */
-export function FormStack({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('space-y-3', className)}>{children}</div>
+export function FormStack({ children, className, inset }: {
+  children: React.ReactNode
+  className?: string
+  /** iOS 分组列表 — 组间距更疏 */
+  inset?: boolean
+}) {
+  return <div className={cn(inset ? 'space-y-7' : 'space-y-3', className)}>{children}</div>
 }
 
 export const FORM_PAGE_TITLES = { create: '新建', edit: '修改' } as const
@@ -148,6 +208,12 @@ interface PageShellProps {
   wide?: boolean
   footer?: React.ReactNode
   children: React.ReactNode
+  /** dbm 分段保存 — 传入时顶栏使用 CompactPageToolbar */
+  onSubmit?: () => void
+  onCancel?: () => void
+  submitLoading?: boolean
+  submitTitle?: string
+  cancelTitle?: string
 }
 
 function resolvePageTitle(props: Pick<PageShellProps, 'mode' | 'title'>) {
@@ -156,18 +222,58 @@ function resolvePageTitle(props: Pick<PageShellProps, 'mode' | 'title'>) {
   return props.title
 }
 
-export function FormPage({ mode, title, backTo, backLabel, wide, footer, children }: PageShellProps) {
+function resolveFormHeadline(props: Pick<PageShellProps, 'mode' | 'title' | 'backLabel'>) {
+  if (props.title) return props.title
+  if (props.mode && props.backLabel) {
+    return `${props.mode === 'edit' ? '修改' : '新增'}${props.backLabel}`
+  }
+  if (props.mode) return FORM_PAGE_TITLES[props.mode]
+  throw new Error('FormPage: provide mode or title')
+}
+
+export function FormPage({
+  mode,
+  title,
+  backTo,
+  backLabel,
+  wide,
+  footer,
+  children,
+  onSubmit,
+  onCancel,
+  submitLoading,
+  submitTitle,
+  cancelTitle,
+}: PageShellProps) {
   const navigate = useNavigate()
   const resolvedTitle = resolvePageTitle({ mode, title })
+  const headline = onSubmit ? resolveFormHeadline({ mode, title, backLabel }) : resolvedTitle
+  const handleBack = onCancel ?? (() => navigate(backTo))
+
   return (
-    <div className={cn('w-full space-y-4', wide ? 'max-w-[min(100%,88rem)]' : 'max-w-3xl')}>
-      <FormPageHeader
-        parentLabel={backLabel ?? '返回'}
-        actionLabel={resolvedTitle}
-        onBack={() => navigate(backTo)}
-        footer={footer}
-      />
-      <div className={cn('leader-form-body mx-auto w-full', wide ? 'max-w-none' : 'max-w-lg')}>
+    <div className={cn('flex min-h-0 w-full flex-col', wide ? 'max-w-[min(100%,88rem)]' : onSubmit ? 'w-full' : 'max-w-3xl')}>
+      {onSubmit ? (
+        <CompactPageToolbar
+          backLabel={backLabel ?? ''}
+          heading={headline}
+          onBack={handleBack}
+          primaryAction={{
+            onSubmit,
+            onCancel: handleBack,
+            loading: submitLoading,
+            okText: submitTitle ?? '保存',
+            cancelText: cancelTitle ?? '取消',
+          }}
+        />
+      ) : (
+        <FormPageHeader
+          parentLabel={backLabel ?? '返回'}
+          actionLabel={resolvedTitle}
+          onBack={() => navigate(backTo)}
+          footer={footer}
+        />
+      )}
+      <div className={cn('leader-form-body min-w-0 flex-1 pt-3', wide && 'max-w-none')}>
         {children}
       </div>
     </div>
@@ -178,14 +284,14 @@ export function DocumentPage({ mode, title, backTo, backLabel, wide, footer, chi
   const navigate = useNavigate()
   const resolvedTitle = resolvePageTitle({ mode, title })
   return (
-    <div className={cn('w-full space-y-4', wide ? 'max-w-5xl' : 'max-w-4xl')}>
-      <FormPageHeader
-        parentLabel={backLabel ?? '返回'}
-        actionLabel={resolvedTitle}
+    <div className={cn('flex min-h-0 w-full flex-col', wide ? 'max-w-[min(100%,88rem)]' : 'max-w-4xl')}>
+      <CompactPageToolbar
+        backLabel={backLabel ?? ''}
+        heading={resolvedTitle}
         onBack={() => navigate(backTo)}
-        footer={footer}
+        trailing={footer}
       />
-      {children}
+      <div className="leader-form-body min-w-0 flex-1 pt-3">{children}</div>
     </div>
   )
 }

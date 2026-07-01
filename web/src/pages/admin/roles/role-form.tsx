@@ -3,14 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
   FormPage,
-  FormSection,
-  FormStack,
-  InsetFormGroup,
-  InsetFormRow,
-  insetFormInputClass,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  groupedFormInputClass,
 } from 'components/form-page'
 import { Badge } from 'components/common'
-import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { ACTION_LABELS, MODULE_LABELS } from 'lib/auth'
 import { GET_ROLE, GET_PERMISSIONS, ADD_ROLE, SET_ROLE_PERMISSIONS } from '../queries'
@@ -111,58 +110,53 @@ export default function RoleForm() {
       backTo="/admin/roles"
       backLabel='角色管理'
       wide
-      footer={
-        <FormProcessButtons
-          onCancel={() => navigate('/admin/roles')}
-          onSubmit={handleSave}
-          loading={saving || savingPerms}
-          submitTitle="保存"
-        />
-      }
+      onSubmit={handleSave}
+      onCancel={() => navigate('/admin/roles')}
+      submitLoading={saving || savingPerms}
     >
-      <FormStack>
-        <FormSection title="角色信息" desc="编码、名称与职责说明" inset narrow>
-          <InsetFormGroup>
-            <InsetFormRow label='角色编码' required>
+      <GroupedFormStack>
+        <GroupedFormSection title="角色信息">
+          <GroupedFormRow>
+            <GroupedFormItem label='角色编码' required>
               <Input
-                className={insetFormInputClass}
+                className={groupedFormInputClass}
                 value={form.code}
                 disabled={isSystem}
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                 placeholder='如 CUSTOM_ROLE'
               />
-            </InsetFormRow>
-            <InsetFormRow label='角色名称' required>
-              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='说明'>
-              <Input
-                className={insetFormInputClass}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder='角色职责说明'
-              />
-            </InsetFormRow>
-          </InsetFormGroup>
-        </FormSection>
+            </GroupedFormItem>
+            <GroupedFormItem label='角色名称' required>
+              <Input className={groupedFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormItem label='说明'>
+            <Input
+              className={groupedFormInputClass}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder='角色职责说明'
+            />
+          </GroupedFormItem>
+        </GroupedFormSection>
 
-        <FormSection
+        <GroupedFormSection
           title="权限授权"
-          desc={isAdminRole ? '管理员拥有全部权限' : '按模块勾选操作权限'}
+          tip={isAdminRole ? '管理员拥有全部权限' : '按模块勾选操作权限'}
         >
           {isAdminRole && (
-            <div className="mb-3">
+            <div className="px-3.5 py-2">
               <Badge>管理员拥有全部权限</Badge>
             </div>
           )}
 
           {!isAdminRole && (
-            <div className="space-y-3">
+            <div className="space-y-3 px-3.5 py-2">
               {Object.entries(byModule).map(([module, perms]) => {
                 const allChecked = perms.every((p) => selected.has(p.id))
                 const someChecked = perms.some((p) => selected.has(p.id))
                 return (
-                  <div key={module} className="rounded-[10px] border border-border/40 p-3">
+                  <div key={module} className="rounded-lg border border-border/40 bg-white p-3">
                     <div className="mb-2 flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -195,8 +189,8 @@ export default function RoleForm() {
               })}
             </div>
           )}
-        </FormSection>
-      </FormStack>
+        </GroupedFormSection>
+      </GroupedFormStack>
     </FormPage>
   )
 }

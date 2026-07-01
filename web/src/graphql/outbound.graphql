@@ -1,5 +1,5 @@
-query GetOutboundOrders($status: String, $input: PaginationInput) {
-  getOutboundOrders(status: $status, input: $input)
+query GetOutboundOrders($status: String, $orderNo: String, $dateFrom: DateTime, $dateTo: DateTime, $input: PaginationInput) {
+  getOutboundOrders(status: $status, orderNo: $orderNo, dateFrom: $dateFrom, dateTo: $dateTo, input: $input)
 }
 
 query GetOutboundOrder($input: IdInput!) {

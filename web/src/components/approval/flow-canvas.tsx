@@ -3,7 +3,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -81,9 +80,10 @@ export function FlowCanvas({
       })) as Node[],
     )
     setEdges(next.edges as Edge[])
-    requestAnimationFrame(() => {
+    const timer = window.setTimeout(() => {
       syncingRef.current = false
-    })
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [graph, progress, readonly, selectedNodeId, setNodes, setEdges])
 
   const emitChange = useCallback(
@@ -137,6 +137,7 @@ export function FlowCanvas({
       onNodesChange(changes)
       if (readonly || syncingRef.current || !isUserNodeChange(changes)) return
       setTimeout(() => {
+        if (syncingRef.current) return
         setNodes((current) => {
           emitChange(current, edgesRef.current)
           return current
@@ -151,6 +152,7 @@ export function FlowCanvas({
       onEdgesChange(changes)
       if (readonly || syncingRef.current || !isUserEdgeChange(changes)) return
       setTimeout(() => {
+        if (syncingRef.current) return
         setEdges((current) => {
           emitChange(nodesRef.current, current)
           return current
@@ -197,7 +199,6 @@ export function FlowCanvas({
       >
         <Background gap={16} size={1} />
         <Controls showInteractive={!readonly} />
-        <MiniMap zoomable pannable className="!bg-background/80" />
       </ReactFlow>
     </div>
   )

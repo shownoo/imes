@@ -149,12 +149,25 @@ body[data-v6-overview-theme='hermes-blue'] .leader-panel-card {
 }
 
 /* iOS Inset Grouped List — 标签左 / 值右 / 发丝分隔 / 无独立 input 框 */
-.inset-form-group > .inset-form-row:not(:last-child) {
-  border-bottom: 1px solid color-mix(in srgb, hsl(var(--border)) 38%, transparent);
+.inset-form-group > .inset-form-row:not(:last-child),
+.inset-form-group > div:not(:last-child) {
+  border-bottom: 1px solid color-mix(in srgb, hsl(var(--border)) 32%, transparent);
 }
 
 .inset-form-group > .inset-form-row:focus-within {
   background: color-mix(in srgb, hsl(var(--foreground)) 2.5%, transparent);
+}
+
+.inset-form-page-section:first-child {
+  padding-top: 0.125rem;
+}
+
+/* dbm 分组表单 — 仅去掉毛玻璃叠层，保留白底描边控件 */
+[data-form-section] input:not([type='checkbox']):not([type='radio']),
+[data-form-section] textarea,
+[data-form-section] button[role='combobox'] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .inset-form-group .inset-form-control,

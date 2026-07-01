@@ -9,6 +9,8 @@
     "dev:web": "pnpm -C web dev",
     "build": "pnpm -r build",
     "db:seed": "pnpm -C api db:seed",
+    "db:seed:required": "pnpm -C api db:seed:required",
+    "db:seed:demo": "pnpm -C api db:seed:demo",
     "prisma:g": "pnpm -C api prisma:g",
     "i18n:generate": "node scripts/generate-locales.mjs"
   }

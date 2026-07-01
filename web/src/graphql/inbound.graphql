@@ -1,5 +1,5 @@
-query GetInboundOrders($type: String, $status: String, $input: PaginationInput) {
-  getInboundOrders(type: $type, status: $status, input: $input)
+query GetInboundOrders($type: String, $status: String, $warehouseId: ID, $orderNo: String, $supplierId: ID, $dateFrom: DateTime, $dateTo: DateTime, $input: PaginationInput) {
+  getInboundOrders(type: $type, status: $status, warehouseId: $warehouseId, orderNo: $orderNo, supplierId: $supplierId, dateFrom: $dateFrom, dateTo: $dateTo, input: $input)
 }
 
 query GetInboundOrder($input: IdInput!) {

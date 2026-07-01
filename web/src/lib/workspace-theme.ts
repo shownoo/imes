@@ -177,33 +177,65 @@ export const VIEW_PERSPECTIVES: Array<{
     desc: 'KPI · 热力图 · 预警一屏统览',
     margin: '32',
     maxWidth: '1680',
-    visible: ['kpi', 'expiry', 'zoneHeatmap', 'pendingTasks', 'alerts', 'waterLevel'],
+    visible: [
+      'kpi',
+      'chartExpiryPie', 'chartAlertPie', 'chartZoneBar', 'chartCategoryBar',
+      'chartDestinationBar', 'chartIoTrend',
+      'expiry', 'zoneHeatmap', 'myApprovals', 'activeDocuments', 'alerts', 'waterLevel',
+    ],
   },
   {
     id: 'operator',
     label: '仓储运营',
-    desc: '待办 · 水位 · 效期为主',
+    desc: '审批待办 · 水位 · 效期为主',
     margin: '24',
     maxWidth: '1680',
-    visible: ['kpi', 'expiry', 'waterLevel', 'pendingTasks', 'alerts'],
+    visible: [
+      'kpi', 'chartExpiryPie', 'chartAlertPie', 'chartDestinationBar',
+      'expiry', 'waterLevel', 'myApprovals', 'activeDocuments', 'alerts',
+    ],
   },
   {
     id: 'warehouse',
     label: '仓管作业',
-    desc: '待办单据 + 库存水位优先',
+    desc: '进行中单据 + 库存水位优先',
     margin: '24',
     maxWidth: '1440',
-    visible: ['pendingTasks', 'waterLevel', 'expiry', 'kpi'],
+    visible: [
+      'myApprovals', 'activeDocuments', 'waterLevel', 'expiry',
+      'chartZoneBar', 'chartInboundBar', 'chartOutboundBar', 'kpi',
+    ],
   },
 ]
 
 export type WorkspaceWidgetId =
   | 'kpi'
+  | 'chartExpiryPie'
+  | 'chartAlertPie'
+  | 'chartZoneBar'
+  | 'chartCategoryBar'
+  | 'chartInboundBar'
+  | 'chartOutboundBar'
+  | 'chartDestinationBar'
+  | 'chartIoTrend'
   | 'expiry'
   | 'waterLevel'
   | 'zoneHeatmap'
-  | 'pendingTasks'
+  | 'myApprovals'
+  | 'activeDocuments'
   | 'alerts'
+
+/** 统计图 widget，供布局与旧版 statsCharts 迁移 */
+export const CHART_WIDGET_IDS: WorkspaceWidgetId[] = [
+  'chartExpiryPie',
+  'chartAlertPie',
+  'chartZoneBar',
+  'chartCategoryBar',
+  'chartInboundBar',
+  'chartOutboundBar',
+  'chartDestinationBar',
+  'chartIoTrend',
+]
 
 export type WorkspaceWidget = {
   id: WorkspaceWidgetId
@@ -213,19 +245,37 @@ export type WorkspaceWidget = {
 
 export const WORKSPACE_WIDGET_DEFS: Record<WorkspaceWidgetId, string> = {
   kpi: '核心指标',
+  chartExpiryPie: '图表·效期分布',
+  chartAlertPie: '图表·预警构成',
+  chartZoneBar: '图表·分区库存',
+  chartCategoryBar: '图表·大类品种',
+  chartInboundBar: '图表·入库状态',
+  chartOutboundBar: '图表·出库状态',
+  chartDestinationBar: '图表·出库目的地',
+  chartIoTrend: '图表·出入库趋势',
   expiry: '效期健康度',
   waterLevel: '库存水位线',
   zoneHeatmap: '库区热力图',
-  pendingTasks: '待办单据',
+  myApprovals: '待我审批',
+  activeDocuments: '进行中单据',
   alerts: '智能预警',
 }
 
 export const DEFAULT_WORKSPACE_WIDGETS: WorkspaceWidget[] = [
   { id: 'kpi', label: '核心指标', visible: true },
+  { id: 'chartExpiryPie', label: '图表·效期分布', visible: true },
+  { id: 'chartAlertPie', label: '图表·预警构成', visible: true },
+  { id: 'chartZoneBar', label: '图表·分区库存', visible: true },
+  { id: 'chartCategoryBar', label: '图表·大类品种', visible: true },
+  { id: 'chartInboundBar', label: '图表·入库状态', visible: true },
+  { id: 'chartOutboundBar', label: '图表·出库状态', visible: true },
+  { id: 'chartDestinationBar', label: '图表·出库目的地', visible: true },
+  { id: 'chartIoTrend', label: '图表·出入库趋势', visible: true },
   { id: 'expiry', label: '效期健康度', visible: true },
   { id: 'waterLevel', label: '库存水位线', visible: true },
   { id: 'zoneHeatmap', label: '库区热力图', visible: true },
-  { id: 'pendingTasks', label: '待办单据', visible: true },
+  { id: 'myApprovals', label: '待我审批', visible: true },
+  { id: 'activeDocuments', label: '进行中单据', visible: true },
   { id: 'alerts', label: '智能预警', visible: true },
 ]
 
@@ -304,11 +354,54 @@ export function readWorkspacePreferences(): WorkspacePreferences {
 
 function mergeWidgets(widgets?: WorkspaceWidget[]): WorkspaceWidget[] {
   if (!widgets?.length) return DEFAULT_WORKSPACE_WIDGETS
-  const ids = new Set(widgets.map((w) => w.id))
-  const merged = [...widgets]
+
+  type StoredWidget = { id: string; label?: string; visible: boolean }
+  const stored = widgets as StoredWidget[]
+  const legacyPending = stored.find((w) => w.id === 'pendingTasks')
+  const legacyStatsCharts = stored.find((w) => w.id === 'statsCharts')
+  const ids = new Set<WorkspaceWidgetId>()
+  const merged: WorkspaceWidget[] = []
+
+  for (const w of stored) {
+    if (w.id === 'pendingTasks' || w.id === 'statsCharts') continue
+    if (w.id in WORKSPACE_WIDGET_DEFS && !ids.has(w.id as WorkspaceWidgetId)) {
+      ids.add(w.id as WorkspaceWidgetId)
+      merged.push({ ...w, id: w.id as WorkspaceWidgetId, label: WORKSPACE_WIDGET_DEFS[w.id as WorkspaceWidgetId] })
+    }
+  }
+
+  if (legacyStatsCharts) {
+    for (const id of CHART_WIDGET_IDS) {
+      if (!ids.has(id)) {
+        ids.add(id)
+        merged.push({
+          id,
+          label: WORKSPACE_WIDGET_DEFS[id],
+          visible: legacyStatsCharts.visible,
+        })
+      }
+    }
+  }
+
+  if (legacyPending) {
+    for (const id of ['myApprovals', 'activeDocuments'] as const) {
+      if (!ids.has(id)) {
+        ids.add(id)
+        merged.push({
+          id,
+          label: WORKSPACE_WIDGET_DEFS[id],
+          visible: legacyPending.visible,
+        })
+      }
+    }
+  }
+
   for (const def of DEFAULT_WORKSPACE_WIDGETS) {
     if (!ids.has(def.id)) merged.push(def)
   }
+
+  const order = DEFAULT_WORKSPACE_WIDGETS.map((w) => w.id)
+  merged.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
   return merged.filter((w) => w.id in WORKSPACE_WIDGET_DEFS)
 }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { Search } from 'lucide-react'
-import { DataTable, Badge, Button } from 'components/common'
+import { DataTable, Badge, Button, TABLE_KEYS } from 'components/common'
 import { DebounceInput } from 'components/debounce-input'
 import { ListToolbar, SearchInputShell } from 'components/section-menu'
 import { LogDetailDialog, hasLogDetail } from 'components/log-detail-dialog'
@@ -72,6 +72,7 @@ export default function LogsIndex() {
       />
 
       <DataTable
+        tableKey={TABLE_KEYS.ADMIN_LOGS}
         loading={loading}
         columns={[
           { key: 'createdAt', title: '时间', render: (r) => formatTime(r.createdAt) },

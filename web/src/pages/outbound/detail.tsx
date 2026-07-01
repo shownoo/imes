@@ -1,23 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useLazyQuery } from '@apollo/client'
-import { MapPin, Pencil } from 'lucide-react'
-import { DocumentPage } from 'components/form-page'
-import { Button, Card, CardContent } from 'components/common'
+import { Pencil } from 'lucide-react'
+import {
+  DocumentPage,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  GroupedFormReadonlyField,
+  DocumentLinesSection,
+} from 'components/form-page'
+import { Button } from 'components/common'
 import { StatusBadge } from 'components/status-badge'
 import { QrLabelDialog } from 'components/qr-label-dialog'
 import type { QrLabelData } from 'components/qr-label'
-import { QrScanInput } from 'components/qr-scan-input'
 import { SplitConfirmDialog, type SplitConfirmStock } from 'components/split-confirm-dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table'
-import { ALERT_LEVEL, formatDate } from 'lib/utils'
 import { ApprovalFlowViewer } from 'components/approval/flow-viewer'
 import type { FlowGraph, NodeProgressState } from 'lib/approval-flow'
-import { GET_ORDER, GET_PICK, GET_APPROVAL, TRACE_STOCK, SUBMIT, APPROVE, START_PICK, PICK, SHIP, COMPLETE } from './queries'
-import { useAuth } from 'lib/auth'
 import { canActOnAssignee } from 'lib/approval-flow'
+import { useAuth } from 'lib/auth'
+import { MessageAlert } from 'components/message-alert'
 import { PrintButton } from 'components/print-button'
 import { LEGAL_PRINT_TEMPLATE } from 'lib/print-keys'
+import { formatDate } from 'lib/utils'
+import { GET_ORDER, GET_PICK, GET_APPROVAL, TRACE_STOCK, SUBMIT, APPROVE, START_PICK, PICK, SHIP, COMPLETE } from './queries'
+import { PickLinesTable, linePendingPick } from './pick-lines-table'
+import { PickSummaryPanel } from './pick-summary'
+import { PickPanel } from './pick-panel'
+
+type PageMessage = {
+  title: string
+  description?: React.ReactNode
+  tone?: 'warning' | 'info'
+}
 
 function expiryLevelFromDate(expiryDate: string): string {
   const diffDays = (new Date(expiryDate).getTime() - Date.now()) / 86400000
@@ -32,12 +48,15 @@ export default function OutboundDetail() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const pickLineId = searchParams.get('pick')
+  const panelRef = useRef<HTMLDivElement>(null)
+
   const [scanQr, setScanQr] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmStock, setConfirmStock] = useState<SplitConfirmStock | null>(null)
   const [confirmQty, setConfirmQty] = useState(0)
   const [labelOpen, setLabelOpen] = useState(false)
   const [labelData, setLabelData] = useState<QrLabelData | null>(null)
+  const [pageMessage, setPageMessage] = useState<PageMessage | null>(null)
 
   const { data, refetch } = useQuery(GET_ORDER, { variables: { input: { id } }, skip: !id })
   const { data: approvalData } = useQuery(GET_APPROVAL, {
@@ -64,7 +83,7 @@ export default function OutboundDetail() {
   )
   const orderLines = (order?.lines as Array<Record<string, unknown>>) ?? []
   const pickLine = pickLineId ? orderLines.find((l) => String(l.id) === pickLineId) : null
-  const lineRemaining = pickLine ? Number(pickLine.requestedQty) - Number(pickLine.pickedQty ?? 0) : 0
+  const lineRemaining = pickLine ? linePendingPick(pickLine) : 0
 
   const { data: pickData } = useQuery(GET_PICK, {
     skip: !pickLine,
@@ -76,8 +95,12 @@ export default function OutboundDetail() {
     shortage?: number
   } | undefined
   const suggestions = pickPayload?.suggestions ?? []
-  const firstStop = suggestions[0] as Record<string, unknown> | undefined
+  const firstStop = suggestions[0]
   const allPicked = orderLines.length > 0 && orderLines.every((l) => Number(l.pickedQty ?? 0) >= Number(l.requestedQty))
+  const isPicking = order?.status === 'PICKING'
+  const showPickSummary = isPicking || order?.status === 'SHIPPED' || order?.status === 'COMPLETED'
+
+  const showMessage = (msg: PageMessage) => setPageMessage(msg)
 
   const openPick = (line: Record<string, unknown>) => {
     setScanQr('')
@@ -92,6 +115,11 @@ export default function OutboundDetail() {
     setSearchParams({})
   }
 
+  useEffect(() => {
+    if (!pickLineId) return
+    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [pickLineId])
+
   const openConfirmForQr = async (qrCode: string) => {
     if (!pickLine) return
     const trimmed = qrCode.trim()
@@ -101,15 +129,15 @@ export default function OutboundDetail() {
       const { data: traceData } = await traceStock({ variables: { qrCode: trimmed } })
       const item = traceData?.traceMaterial as Record<string, unknown> | null | undefined
       if (!item) {
-        alert('未找到该二维码对应的库存')
+        showMessage({ title: '未找到库存', description: '未找到该二维码对应的库存记录。' })
         return
       }
       if (item.status !== 'IN_STOCK') {
-        alert('该物资不在库，无法拣货')
+        showMessage({ title: '无法拣货', description: '该物资不在库，无法拣货。' })
         return
       }
       if (String(item.materialId) !== String(pickLine.materialId)) {
-        alert('扫码物资与单据不匹配')
+        showMessage({ title: '物资不匹配', description: '扫码物资与当前出库明细不一致。' })
         return
       }
 
@@ -133,7 +161,10 @@ export default function OutboundDetail() {
       setConfirmQty(defaultQty)
       setConfirmOpen(true)
     } catch (e) {
-      alert(e instanceof Error ? e.message : '扫码核对失败')
+      showMessage({
+        title: '扫码失败',
+        description: e instanceof Error ? e.message : '扫码核对失败，请重试',
+      })
     }
   }
 
@@ -165,24 +196,75 @@ export default function OutboundDetail() {
         })
         setLabelOpen(true)
       } else if (payload?.message) {
-        alert(payload.message)
+        showMessage({ title: '拣货提示', description: payload.message, tone: 'info' })
       }
       setConfirmOpen(false)
       setConfirmStock(null)
-      closePick()
+      const { data: fresh } = await refetch()
+      const freshOrder = fresh?.getOutboundOrder as { lines?: Array<Record<string, unknown>> } | undefined
+      const freshLine = freshOrder?.lines?.find((l) => String(l.id) === String(pickLine.id))
+      const stillPending = freshLine ? linePendingPick(freshLine) : 0
+      if (stillPending > 0) {
+        setScanQr('')
+      } else {
+        closePick()
+      }
+    } catch (e) {
+      showMessage({
+        title: '拣货失败',
+        description: e instanceof Error ? e.message : '操作失败，请稍后重试',
+      })
+    }
+  }
+
+  const handleShip = async () => {
+    if (!id) return
+    const incomplete = orderLines.filter((line) => linePendingPick(line) > 0)
+    if (incomplete.length > 0) {
+      showMessage({
+        title: '无法确认出库',
+        description: (
+          <>
+            <p className="mb-2.5">以下明细尚未拣齐，请先完成 FIFO 拣货：</p>
+            <ul className="divide-y divide-border/35 overflow-hidden rounded-lg border border-border/50 bg-muted/25">
+              {incomplete.map((line) => {
+                const material = line.material as { name?: string; unit?: string }
+                const pending = linePendingPick(line)
+                return (
+                  <li key={String(line.id)} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
+                    <span className="truncate font-medium text-foreground">{material?.name ?? '—'}</span>
+                    <span className="shrink-0 tabular-nums text-amber-600">
+                      待拣 {pending.toLocaleString()}{material?.unit ? ` ${material.unit}` : ''}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        ),
+      })
+      return
+    }
+    try {
+      await shipOrder({ variables: { input: { id } } })
       refetch()
     } catch (e) {
-      alert(e instanceof Error ? e.message : '拣货失败')
+      showMessage({
+        title: '无法确认出库',
+        description: e instanceof Error ? e.message : '操作失败，请稍后重试',
+      })
     }
   }
 
   if (!order) return null
 
+  const pickMaterial = pickLine?.material as { name?: string; unit?: string } | undefined
+
   return (
     <DocumentPage
       title={String(order.orderNo ?? '')}
       backTo="/outbound"
-      backLabel='出库管理'
+      backLabel="出库管理"
       wide
       footer={
         <>
@@ -191,157 +273,116 @@ export default function OutboundDetail() {
           )}
           {order.status === 'DRAFT' && (
             <>
-              <Button variant="outline" onClick={() => navigate(`/outbound/${id}/edit`)}><Pencil className="size-4" />编辑</Button>
-              <Button onClick={async () => { await submitOrder({ variables: { input: { id } } }); refetch() }}>提交审核</Button>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/outbound/${id}/edit`)}>
+                <Pencil className="size-3.5" />编辑
+              </Button>
+              <Button size="sm" onClick={async () => { await submitOrder({ variables: { input: { id } } }); refetch() }}>提交审核</Button>
             </>
           )}
           {order.status === 'PENDING' && myPendingTask && (
             <>
-              <Button variant="destructive" onClick={async () => { await approveOrder({ variables: { input: { id }, approved: false, rejectReason: '不符合调拨条件' } }); refetch() }}>驳回</Button>
-              <Button onClick={async () => { await approveOrder({ variables: { input: { id }, approved: true } }); refetch() }}>审核通过</Button>
+              <Button size="sm" variant="destructive" onClick={async () => { await approveOrder({ variables: { input: { id }, approved: false, rejectReason: '不符合调拨条件' } }); refetch() }}>驳回</Button>
+              <Button size="sm" onClick={async () => { await approveOrder({ variables: { input: { id }, approved: true } }); refetch() }}>审核通过</Button>
             </>
           )}
           {order.status === 'APPROVED' && (
-            <Button onClick={async () => { await startPick({ variables: { input: { id } } }); refetch() }}>开始拣货</Button>
+            <Button size="sm" onClick={async () => { await startPick({ variables: { input: { id } } }); refetch() }}>开始拣货</Button>
           )}
-          {order.status === 'PICKING' && allPicked && (
-            <Button onClick={async () => { try { await shipOrder({ variables: { input: { id } } }); refetch() } catch (e) { alert(e instanceof Error ? e.message : '出库失败') } }}>确认出库</Button>
+          {isPicking && allPicked && (
+            <Button size="sm" onClick={() => void handleShip()}>确认出库</Button>
           )}
           {order.status === 'SHIPPED' && (
-            <Button onClick={async () => { await completeOrder({ variables: { input: { id } } }); refetch() }}>完成单据</Button>
+            <Button size="sm" onClick={async () => { await completeOrder({ variables: { input: { id } } }); refetch() }}>完成单据</Button>
           )}
         </>
       }
     >
-      <Card className="mb-6">
-        <CardContent className="grid grid-cols-4 gap-4 pt-6 text-sm">
-          <div><span className="text-muted-foreground">状态</span><p className="mt-1.5"><StatusBadge status={String(order.status)} /></p></div>
-          <div><span className="text-muted-foreground">用途</span><p className="mt-1">{String(order.purpose ?? '—')}</p></div>
-          <div><span className="text-muted-foreground">目的地</span><p className="mt-1">{String(order.destination ?? '—')}</p></div>
-          <div><span className="text-muted-foreground">领用人</span><p className="mt-1">{String(order.recipient ?? '—')}</p></div>
-        </CardContent>
-      </Card>
-
-      {approval?.flow?.graph && order.status !== 'DRAFT' && (
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
-            {approval.tasks && approval.tasks.length > 0 && (
-              <div className="mt-4 space-y-2 border-t pt-4">
-                <p className="text-xs font-medium text-muted-foreground">审批记录</p>
-                {approval.tasks.filter((t) => t.status !== 'PENDING').map((t) => (
-                  <div key={t.id} className="flex justify-between text-xs">
-                    <span>{t.nodeLabel} · {t.status === 'APPROVED' ? '通过' : '驳回'}</span>
-                    <span className="text-muted-foreground">{t.actedBy?.name ?? '—'}{t.comment ? ` · ${t.comment}` : ''}</span>
-                  </div>
-                ))}
-              </div>
+      <GroupedFormStack>
+        <GroupedFormSection title="出库信息">
+          <GroupedFormRow>
+            <GroupedFormItem label="用途">
+              <GroupedFormReadonlyField>{String(order.purpose ?? '—')}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+            <GroupedFormItem label="目的地">
+              <GroupedFormReadonlyField>{String(order.destination ?? '—')}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="领用人">
+              <GroupedFormReadonlyField>{String(order.recipient ?? '—')}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+            <GroupedFormItem label="创建时间">
+              <GroupedFormReadonlyField>{formatDate(String(order.createdAt))}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="状态">
+              <GroupedFormReadonlyField className="border-0 bg-transparent px-1 shadow-none">
+                <StatusBadge status={String(order.status)} />
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+            {order.rejectReason ? (
+              <GroupedFormItem label="驳回原因">
+                <GroupedFormReadonlyField>{String(order.rejectReason)}</GroupedFormReadonlyField>
+              </GroupedFormItem>
+            ) : (
+              <GroupedFormItem label="单号">
+                <GroupedFormReadonlyField>{String(order.orderNo ?? '—')}</GroupedFormReadonlyField>
+              </GroupedFormItem>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </GroupedFormRow>
+          {showPickSummary && (
+            <PickSummaryPanel lines={orderLines} picking={isPicking} embedded compact />
+          )}
+        </GroupedFormSection>
 
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>物资</TableHead>
-                <TableHead>申请数量</TableHead>
-                <TableHead>已拣</TableHead>
-                <TableHead>操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orderLines.map((line) => (
-                <TableRow key={String(line.id)}>
-                  <TableCell>{(line.material as { name?: string })?.name}</TableCell>
-                  <TableCell>{String(line.requestedQty)} {(line.material as { unit?: string })?.unit}</TableCell>
-                  <TableCell>{String(line.pickedQty ?? 0)}</TableCell>
-                  <TableCell>
-                    {order.status === 'PICKING' && Number(line.pickedQty ?? 0) < Number(line.requestedQty) && (
-                      <Button variant="link" size="sm" className="h-auto p-0" onClick={() => openPick(line)}>FIFO拣货</Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        {approval?.flow?.graph && order.status !== 'DRAFT' && (
+          <GroupedFormSection title="审批流程">
+            <GroupedFormItem>
+              <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
+            </GroupedFormItem>
+          </GroupedFormSection>
+        )}
 
-      {pickLine && (
-        <Card className="mt-6 border-primary/30">
-          <CardContent className="space-y-4 pt-6">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">FIFO 拣货 · {(pickLine.material as { name?: string })?.name}</h3>
-              <Button variant="ghost" size="sm" onClick={closePick}>取消</Button>
-            </div>
+        <DocumentLinesSection
+          title="出库清单"
+          caption={isPicking ? '按 FIFO 路线扫码拣货，拆零需确认数量' : undefined}
+          trailing={orderLines.length > 0 ? (
+            <span className="text-xs tabular-nums text-muted-foreground">{orderLines.length} 行</span>
+          ) : undefined}
+        >
+          <PickLinesTable
+            lines={orderLines}
+            picking={isPicking}
+            orderShipped={order.status === 'SHIPPED' || order.status === 'COMPLETED'}
+            activeLineId={pickLineId}
+            onPick={openPick}
+          />
+        </DocumentLinesSection>
 
-            {firstStop && (
-              <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <MapPin className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div>
-                  <p className="text-xs font-medium text-primary">智能指引 · 第 {String(firstStop.routeStep ?? 1)} 站</p>
-                  <p className="mt-1 text-lg font-semibold">
-                    {firstStop.zone ? `${String(firstStop.zone)}区 · ` : ''}{String(firstStop.shelfCode ?? '—')}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    建议拣取 {String(firstStop.pickQty)}，在库 {String((firstStop.stockItem as { quantity?: number })?.quantity ?? firstStop.available)}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {suggestions.length > 0 && (
-              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-                <p className="mb-2 font-medium">
-                  拣货路线（效期优先 · 同效期按货位就近）
-                  {pickPayload?.routeTotal ? ` · 共 ${pickPayload.routeTotal} 站` : ''}
-                </p>
-                {suggestions.map((s, i) => {
-                  const item = s.stockItem as Record<string, unknown>
-                  const batch = item?.batch as { expiryDate?: string } | undefined
-                  const level = String(s.expiryLevel)
-                  return (
-                    <div key={i} className="flex items-center justify-between gap-2 py-1 text-xs">
-                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums">
-                        {String(s.routeStep ?? i + 1)}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        {s.zone ? `${String(s.zone)}区 · ` : ''}{String(s.shelfCode)} · 可拣 {String(s.pickQty)} · 效期 {batch?.expiryDate ? formatDate(batch.expiryDate) : '—'}
-                      </span>
-                      <span className={`shrink-0 rounded px-1.5 py-0.5 ${ALERT_LEVEL[level]?.color ?? 'bg-muted'}`}>{ALERT_LEVEL[level]?.label ?? level}</span>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto shrink-0 p-0"
-                        onClick={() => void openConfirmForQr(String(item?.qrCode ?? ''))}
-                      >
-                        选用'</Button>
-                    </div>
-                  )
-                })}
-                {(pickPayload?.shortage ?? 0) > 0 && (
-                  <p className="mt-2 text-xs text-destructive">库存不足，尚缺 {pickPayload?.shortage}</p>
-                )}
-              </div>
-            )}
-
-            <div className="max-w-lg">
-              <p className="mb-2 text-sm font-medium">扫码拣货</p>
-              <QrScanInput
-                value={scanQr}
-                onChange={setScanQr}
-                onSubmit={(qr) => void openConfirmForQr(qr)}
-                disabled={tracing || picking}
-                placeholder='扫描物资二维码，核对后进入拆零确认'
-              />
-              <p className="mt-2 text-xs text-muted-foreground">扫码后系统将弹出在库数量，通过数字键盘输入本次出库量</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {pickLine && (
+          <div ref={panelRef}>
+            <PickPanel
+              materialName={pickMaterial?.name ?? '—'}
+              unit={pickMaterial?.unit}
+              requestedQty={Number(pickLine.requestedQty)}
+              pickedQty={Number(pickLine.pickedQty ?? 0)}
+              pendingQty={lineRemaining}
+              suggestions={suggestions}
+              routeTotal={pickPayload?.routeTotal}
+              shortage={pickPayload?.shortage}
+              firstStop={firstStop}
+              scanQr={scanQr}
+              onScanQrChange={setScanQr}
+              onScanSubmit={(qr) => void openConfirmForQr(qr)}
+              onSelectSuggestion={(qr) => void openConfirmForQr(qr)}
+              onCancel={closePick}
+              scanning={tracing}
+              picking={picking}
+            />
+          </div>
+        )}
+      </GroupedFormStack>
 
       <SplitConfirmDialog
         open={confirmOpen}
@@ -358,7 +399,15 @@ export default function OutboundDetail() {
         open={labelOpen}
         onOpenChange={setLabelOpen}
         label={labelData}
-        description='拆零产生新库存单元，请打印标签贴于剩余物资'
+        description="拆零产生新库存单元，请打印标签贴于剩余物资"
+      />
+
+      <MessageAlert
+        open={!!pageMessage}
+        onOpenChange={(open) => { if (!open) setPageMessage(null) }}
+        title={pageMessage?.title ?? ''}
+        description={pageMessage?.description}
+        tone={pageMessage?.tone}
       />
     </DocumentPage>
   )

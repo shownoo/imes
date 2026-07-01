@@ -9,7 +9,11 @@ model InboundOrder {
   warehouseId String?
   supplierId String?
   contractNo String?
+  contact    String?
+  phone      String?
   remark     String?
+  orderDate  DateTime      @default(now())
+  plannedReceiveDate DateTime?
   createdById  String
   approvedById String?
   approvedAt   DateTime?
@@ -30,6 +34,7 @@ model InboundOrderLine {
   id         String   @id @default(cuid())
   orderId    String
   materialId String
+  manufacturer String?
   expectedQty Int
   actualQty   Int      @default(0)
   batchNo     String?

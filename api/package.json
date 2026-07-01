@@ -10,6 +10,8 @@
     "prisma:g": "prismerge -i prismerge.json && prisma format && prisma generate",
     "postinstall": "prismerge -i prismerge.json && prisma generate",
     "db:seed": "prisma db seed",
+    "db:seed:required": "SEED_MODE=required prisma db seed",
+    "db:seed:demo": "SEED_MODE=demo prisma db seed",
     "db:push": "prisma db push",
     "db:migrate-rbac": "tsx prisma/migrate-rbac.ts"
   },

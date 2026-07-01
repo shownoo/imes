@@ -8,6 +8,8 @@ export const LOG_MODULE_LABELS: Record<string, string> = {
   WAREHOUSE: '库区货位',
   INBOUND: '入库',
   OUTBOUND: '出库',
+  OUTBOUND_PURPOSE: '出库用途',
+  OUTBOUND_DESTINATION: '出库目的地',
   STOCK: '库存',
   ALERT: '预警',
 }
@@ -60,6 +62,8 @@ export const LOG_FIELD_LABELS: Record<string, string> = {
   remark: '备注',
   purpose: '用途',
   destination: '目的地',
+  city: '所属市',
+  district: '所属区',
   recipient: '领用人',
   rejectReason: '驳回原因',
   status: '状态',

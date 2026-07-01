@@ -157,7 +157,7 @@ export function NotificationCenter({
         <div className="max-h-[min(60vh,420px)] overflow-y-auto py-1">
           <SectionHeader
             icon={ClipboardCheck}
-            title="审批待办"
+            title="待我审批"
             count={approvalCount}
             onViewAll={() => navigate('/tasks')}
           />

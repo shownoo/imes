@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { gql, useQuery } from '@apollo/client'
 import { ScrollText, Search } from 'lucide-react'
-import { PageHeader, DataTable, Badge, Button, Card, CardContent } from 'components/common'
+import { PageHeader, DataTable, Badge, Button, Card, CardContent, TABLE_KEYS } from 'components/common'
 import { Input } from 'components/ui/input'
 import { LogDetailDialog, hasLogDetail } from 'components/log-detail-dialog'
 import { formatDateTime } from 'lib/utils'
@@ -115,6 +115,7 @@ export default function SystemLogs() {
       </Card>
 
       <DataTable
+        tableKey={TABLE_KEYS.SYSTEM_LOGS}
         loading={loading}
         columns={[
           {

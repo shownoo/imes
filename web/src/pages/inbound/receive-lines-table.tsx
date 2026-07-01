@@ -1,7 +1,12 @@
 import { ActionLink } from 'components/action-link'
-import { TableCodeCell } from 'components/grid-table'
-import { Card, CardContent } from 'components/common'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table'
+import {
+  AppleTableFrame,
+  TableCodeCell,
+  appleTableCellClass,
+  appleTableHeadClass,
+  appleTableRowClass,
+  imesDataTableClass,
+} from 'components/grid-table'
 import { LineReceiveOutcome } from './receive-summary'
 import { cn } from 'lib/utils'
 
@@ -15,12 +20,21 @@ function lineStockItems(line: InboundLine) {
   return (line.stockItems as Array<Record<string, unknown>>) ?? []
 }
 
+function stockBatchNo(item: Record<string, unknown>) {
+  return (item.batch as { batchNo?: string } | undefined)?.batchNo
+}
+
+function stockShelfCode(item: Record<string, unknown>) {
+  return (item.shelf as { code?: string } | undefined)?.code
+}
+
+const emptyCell = <span className="text-[15px] text-muted-foreground/35">—</span>
+
 export function ReceiveLinesTable({
   lines,
   receiving,
   orderCompleted,
   activeLineId,
-  warehouseName,
   onReceive,
   onReprint,
 }: {
@@ -28,117 +42,177 @@ export function ReceiveLinesTable({
   receiving: boolean
   orderCompleted?: boolean
   activeLineId?: string | null
-  warehouseName?: string
   onReceive: (line: InboundLine) => void
   onReprint?: (line: InboundLine, stockItem: Record<string, unknown>) => void
 }) {
   return (
-    <Card className="leader-panel-card">
-      <CardContent className="px-0 pb-0 pt-0">
-        {warehouseName && receiving && (
-          <p className="border-b border-border/30 px-5 py-2.5 text-xs text-muted-foreground">
-            上架时请扫描「{warehouseName}」下的货位码
-          </p>
-        )}
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="pl-5">物资</TableHead>
-              <TableHead>编码</TableHead>
-              <TableHead>规格</TableHead>
-              <TableHead>单位</TableHead>
-              <TableHead className="text-right">预计</TableHead>
-              <TableHead className="text-right">实收</TableHead>
-              <TableHead>差异</TableHead>
-              <TableHead>批次</TableHead>
-              <TableHead>货位</TableHead>
-              <TableHead className="pr-5 text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lines.map((line) => {
+    <AppleTableFrame>
+      <table className={imesDataTableClass}>
+        <thead>
+          <tr className="border-b border-border/25">
+            <th className={cn(appleTableHeadClass, 'text-left')}>物资</th>
+            <th className={appleTableHeadClass}>厂牌</th>
+            <th className={appleTableHeadClass}>编码</th>
+            <th className={appleTableHeadClass}>规格</th>
+            <th className={cn(appleTableHeadClass, 'w-12')}>单位</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>预计</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>实收</th>
+            <th className={appleTableHeadClass}>差异</th>
+            <th className={appleTableHeadClass}>批次</th>
+            <th className={appleTableHeadClass}>货位</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lines.length === 0 ? (
+            <tr>
+              <td colSpan={11} className="px-5 py-14 text-center text-[15px] text-muted-foreground">
+                暂无明细
+              </td>
+            </tr>
+          ) : (
+            lines.map((line) => {
               const id = String(line.id)
               const pending = linePending(line)
               const canReceive = receiving && pending > 0
               const active = activeLineId === id
               const stockItems = lineStockItems(line)
-              const firstStock = stockItems[0]
               const material = line.material as {
                 name?: string
                 code?: string
                 spec?: string
                 unit?: string
               } | undefined
+              const actualQty = Number(line.actualQty ?? 0)
+              const expectedQty = Number(line.expectedQty)
+              const fullyReceived = orderCompleted && actualQty > 0 && actualQty === expectedQty
 
               return (
-                <TableRow
+                <tr
                   key={id}
-                  data-state={active ? 'selected' : undefined}
                   className={cn(
-                    active && 'bg-primary/[0.06] hover:bg-primary/[0.06]',
+                    appleTableRowClass,
+                    active && 'bg-primary/[0.07] hover:bg-primary/[0.07]',
                   )}
                 >
-                  <TableCell className="pl-5 font-medium">
-                    {material?.name ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground tabular-nums">
-                    {material?.code ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {material?.spec ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {material?.unit ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-right font-number tabular-nums">
-                    {String(line.expectedQty)}
-                  </TableCell>
-                  <TableCell
+                  <td
                     className={cn(
-                      'text-right font-number tabular-nums',
-                      orderCompleted
-                        && Number(line.actualQty ?? 0) > 0
-                        && Number(line.actualQty ?? 0) === Number(line.expectedQty)
-                        && 'font-medium text-emerald-600',
+                      appleTableCellClass,
+                      'border-l-[3px]',
+                      active ? 'border-l-primary' : 'border-l-transparent',
                     )}
                   >
-                    {String(line.actualQty ?? 0)}
-                  </TableCell>
-                  <TableCell>
+                    <span className="text-[15px] font-medium leading-snug text-foreground">
+                      {material?.name ?? '—'}
+                    </span>
+                  </td>
+                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-[13px] text-muted-foreground')}>
+                    {line.manufacturer ? String(line.manufacturer) : emptyCell}
+                  </td>
+                  <td className={appleTableCellClass}>
+                    {material?.code
+                      ? <TableCodeCell className="text-[13px] font-normal text-muted-foreground">{material.code}</TableCodeCell>
+                      : emptyCell}
+                  </td>
+                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-[13px] text-muted-foreground')}>
+                    {material?.spec ?? emptyCell}
+                  </td>
+                  <td className={cn(appleTableCellClass, 'text-[13px] text-muted-foreground')}>
+                    {material?.unit ?? emptyCell}
+                  </td>
+                  <td className={cn(appleTableCellClass, 'text-right')}>
+                    <span className="font-number text-[15px] font-semibold tabular-nums tracking-tight text-foreground">
+                      {expectedQty.toLocaleString()}
+                    </span>
+                  </td>
+                  <td className={cn(appleTableCellClass, 'text-right')}>
+                    <span
+                      className={cn(
+                        'font-number text-[15px] tabular-nums tracking-tight',
+                        fullyReceived
+                          ? 'font-semibold text-emerald-600'
+                          : actualQty > 0
+                            ? 'font-medium text-foreground'
+                            : 'text-muted-foreground/40',
+                      )}
+                    >
+                      {actualQty.toLocaleString()}
+                    </span>
+                  </td>
+                  <td className={appleTableCellClass}>
                     <LineReceiveOutcome line={line} receiving={receiving} />
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {line.batchNo
-                      ? <TableCodeCell className="font-normal text-muted-foreground">{String(line.batchNo)}</TableCodeCell>
-                      : '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {firstStock
-                      ? (firstStock.shelf as { code?: string } | undefined)?.code ?? (
-                        <span className="text-amber-600">未上架</span>
-                      )
-                      : '—'}
-                  </TableCell>
-                  <TableCell className="pr-5 text-right">
-                    {canReceive ? (
-                      <ActionLink onClick={() => onReceive(line)}>
-                        {active ? '收货中…' : '收货赋码'}
-                      </ActionLink>
-                    ) : firstStock && onReprint ? (
-                      <ActionLink onClick={() => onReprint(line, firstStock)}>
-                        补打标签
-                      </ActionLink>
+                  </td>
+                  <td className={appleTableCellClass}>
+                    {stockItems.length > 0 ? (
+                      <div className="flex flex-col gap-0.5">
+                        {stockItems.map((item, i) => {
+                          const batchNo = stockBatchNo(item)
+                          return batchNo ? (
+                            <TableCodeCell key={String(item.id ?? i)} className="text-[13px] font-normal text-muted-foreground">
+                              {batchNo}
+                            </TableCodeCell>
+                          ) : (
+                            <span key={String(item.id ?? i)} className="text-[13px] text-muted-foreground/35">—</span>
+                          )
+                        })}
+                      </div>
+                    ) : line.batchNo ? (
+                      <TableCodeCell className="text-[13px] font-normal text-muted-foreground">{String(line.batchNo)}</TableCodeCell>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      emptyCell
                     )}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                  <td className={appleTableCellClass}>
+                    {stockItems.length > 0 ? (
+                      <div className="flex flex-col gap-0.5">
+                        {stockItems.map((item, i) => {
+                          const shelfCode = stockShelfCode(item)
+                          return shelfCode ? (
+                            <TableCodeCell key={String(item.id ?? i)} className="text-[13px] font-normal text-muted-foreground">
+                              {shelfCode}
+                            </TableCodeCell>
+                          ) : (
+                            <span
+                              key={String(item.id ?? i)}
+                              className="inline-flex w-fit rounded-full bg-orange-500/12 px-2 py-0.5 text-[11px] font-medium text-orange-600"
+                            >
+                              未上架
+                            </span>
+                          )
+                        })}
+                      </div>
+                    ) : emptyCell}
+                  </td>
+                  <td className={cn(appleTableCellClass, 'text-right')}>
+                    {canReceive || (stockItems.length > 0 && onReprint) ? (
+                      <div className="flex flex-col items-end gap-0.5">
+                        {canReceive && (
+                          <ActionLink
+                            className={cn('text-[15px] font-normal', active && 'font-semibold')}
+                            onClick={() => onReceive(line)}
+                          >
+                            {active ? '收货中…' : pending < expectedQty ? '继续收货' : '收货赋码'}
+                          </ActionLink>
+                        )}
+                        {stockItems.length > 0 && onReprint && stockItems.map((item, i) => (
+                          <ActionLink
+                            key={String(item.id ?? i)}
+                            className="text-[13px] font-normal text-muted-foreground"
+                            onClick={() => onReprint(line, item)}
+                          >
+                            {stockItems.length > 1 ? `补打 · ${stockBatchNo(item) ?? i + 1}` : '补打标签'}
+                          </ActionLink>
+                        ))}
+                      </div>
+                    ) : emptyCell}
+                  </td>
+                </tr>
               )
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            })
+          )}
+        </tbody>
+      </table>
+    </AppleTableFrame>
   )
 }
 

@@ -53,3 +53,37 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* RangePicker 弹层 — 日历由 ui/calendar Tailwind 样式驱动 */
+.range-picker-panel .rdp-root {
+  margin: 0;
+}
+
+/* 列表筛选条 — 胶囊控件，覆盖全局表单样式 */
+.list-filter-toolbar input:not([type='checkbox']):not([type='radio']) {
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: hsl(var(--card));
+  border-color: hsl(var(--border) / 0.6);
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+
+.list-filter-fields button[role='combobox'],
+.list-filter-fields button {
+  height: 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+
+/* 列表筛选 — 输入 / 下拉 / 日期聚焦高亮（容器 focus-within，对齐 leader-form-surface） */
+.list-filter-field:focus-within > input:not([type='checkbox']):not([type='radio']),
+.list-filter-field:focus-within > button,
+.list-filter-field:focus-within button,
+.list-filter-field:has(> button[data-state='open']) > button,
+.list-filter-field:has(button[data-state='open']) button {
+  border-color: color-mix(in srgb, hsl(var(--primary)) 55%, hsl(var(--border))) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 22%, transparent) !important;
+  outline: none !important;
+}

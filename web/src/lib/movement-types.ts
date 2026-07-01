@@ -6,7 +6,7 @@ export const MOVEMENT_TYPE_LABELS: Record<MovementTypeId, string> = {
   INBOUND: '入库',
   OUTBOUND: '出库',
   SPLIT: '拆零',
-  TRANSFER: '移库/上架',
+  TRANSFER: '移库',
   ADJUST: '调整',
   SCRAP: '报废',
 }

@@ -59,6 +59,8 @@ export type ApprovalInboxItem = {
   remindCount?: number
 }
 
+export type { ActiveDocument, SubmittedApprovalItem, WorkbenchSummary, WorkbenchCounts, TaskCenterTab } from 'lib/workbench'
+
 const NODE_TIMING = {
   timeoutHours: 48,
   remindIntervalHours: 4,

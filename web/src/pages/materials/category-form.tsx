@@ -3,14 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
   FormPage,
-  FormSection,
-  FormStack,
-  InsetFormGroup,
-  InsetFormRow,
-  insetFormInputClass,
-  insetFormSelectTriggerClass,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  groupedFormInputClass,
+  groupedFormSelectTriggerClass,
 } from 'components/form-page'
-import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { GET_CATEGORIES, ADD_CATEGORY, ZONE_OPTIONS } from './queries'
@@ -68,42 +67,41 @@ export default function CategoryForm() {
       mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=categories"
       backLabel='物资大类'
-      footer={
-        <FormProcessButtons
-          onCancel={() => navigate('/materials?tab=categories')}
-          onSubmit={handleSave}
-          loading={saving}
-          submitTitle="保存"
-        />
-      }
+      onSubmit={handleSave}
+      onCancel={() => navigate('/materials?tab=categories')}
+      submitLoading={saving}
     >
-      <FormStack>
-        <FormSection title="大类信息" desc="编码、库区、效期与安全库存" inset>
-          <InsetFormGroup>
-            <InsetFormRow label='大类编码' required>
-              <Input className={insetFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='大类名称' required>
-              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='库区类型'>
+      <GroupedFormStack>
+        <GroupedFormSection title="大类信息">
+          <GroupedFormRow>
+            <GroupedFormItem label='大类编码' required>
+              <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </GroupedFormItem>
+            <GroupedFormItem label='大类名称' required>
+              <Input className={groupedFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label='库区类型'>
               <Select value={form.zone} onValueChange={(v) => setForm({ ...form, zone: v })}>
-                <SelectTrigger className={insetFormSelectTriggerClass}><SelectValue /></SelectTrigger>
+                <SelectTrigger className={groupedFormSelectTriggerClass}><SelectValue /></SelectTrigger>
                 <SelectContent>{ZONE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
               </Select>
-            </InsetFormRow>
-            <InsetFormRow label='保质期(月)'>
-              <Input type="number" className={insetFormInputClass} value={String(form.shelfLifeMonths)} onChange={(e) => setForm({ ...form, shelfLifeMonths: Number(e.target.value) })} />
-            </InsetFormRow>
-            <InsetFormRow label='安全库存下限'>
-              <Input type="number" className={insetFormInputClass} value={String(form.safetyStockMin)} onChange={(e) => setForm({ ...form, safetyStockMin: Number(e.target.value) })} />
-            </InsetFormRow>
-            <InsetFormRow label='安全库存上限'>
-              <Input type="number" className={insetFormInputClass} value={String(form.safetyStockMax)} onChange={(e) => setForm({ ...form, safetyStockMax: e.target.value === '' ? '' : Number(e.target.value) })} />
-            </InsetFormRow>
-          </InsetFormGroup>
-        </FormSection>
-      </FormStack>
+            </GroupedFormItem>
+            <GroupedFormItem label='保质期(月)'>
+              <Input type="number" className={groupedFormInputClass} value={String(form.shelfLifeMonths)} onChange={(e) => setForm({ ...form, shelfLifeMonths: Number(e.target.value) })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label='安全库存下限'>
+              <Input type="number" className={groupedFormInputClass} value={String(form.safetyStockMin)} onChange={(e) => setForm({ ...form, safetyStockMin: Number(e.target.value) })} />
+            </GroupedFormItem>
+            <GroupedFormItem label='安全库存上限'>
+              <Input type="number" className={groupedFormInputClass} value={String(form.safetyStockMax)} onChange={(e) => setForm({ ...form, safetyStockMax: e.target.value === '' ? '' : Number(e.target.value) })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+        </GroupedFormSection>
+      </GroupedFormStack>
     </FormPage>
   )
 }

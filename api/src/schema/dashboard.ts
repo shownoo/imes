@@ -1,7 +1,13 @@
 import { builder } from '../builder.js'
 import { calcExpiryLevel } from '../lib/utils.js'
 import { writeSystemLog } from '../lib/system-log.js'
-import { enrichPendingTasks, countMyPendingTasks } from '../lib/approval.js'
+import {
+  countActiveDocuments,
+  fetchActiveDocuments,
+  fetchMyPendingApprovals,
+} from '../lib/workbench.js'
+import { countMyPendingTasks } from '../lib/approval.js'
+import { readOrgCity } from '../lib/org-config.js'
 import { STORAGE_ZONE_LABELS, storageZoneCapacity } from '../lib/warehouse-layout.js'
 
 const ZONE_LABELS = STORAGE_ZONE_LABELS
@@ -23,10 +29,7 @@ builder.queryField('dashboard', (t) =>
         pendingInbound,
         pendingOutbound,
         alerts,
-        inboundTasks,
-        outboundTasks,
         inventorySummary,
-        approvalTasksRaw,
         approvalInboxCount,
       ] = await Promise.all([
         ctx.prisma.material.count(),
@@ -44,29 +47,11 @@ builder.queryField('dashboard', (t) =>
           orderBy: [{ level: 'asc' }, { createdAt: 'desc' }],
           include: { material: true, batch: true },
         }),
-        ctx.prisma.inboundOrder.findMany({
-          where: { status: { in: ['PENDING', 'RECEIVING', 'DRAFT'] } },
-          take: 8,
-          orderBy: { createdAt: 'desc' },
-          include: { supplier: true, createdBy: true },
-        }),
-        ctx.prisma.outboundOrder.findMany({
-          where: { status: { in: ['PENDING', 'APPROVED', 'PICKING', 'DRAFT'] } },
-          take: 8,
-          orderBy: { createdAt: 'desc' },
-          include: { createdBy: true },
-        }),
         ctx.prisma.material.findMany({
           include: {
             category: true,
             stockItems: { where: { status: 'IN_STOCK' } },
           },
-        }),
-        ctx.prisma.approvalTask.findMany({
-          where: { status: 'PENDING', assigneeRole: ctx.identity!.role },
-          include: { instance: { include: { flow: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 8,
         }),
         countMyPendingTasks(ctx.prisma, ctx.identity!.role),
       ])
@@ -120,30 +105,154 @@ builder.queryField('dashboard', (t) =>
       const expiringSoon = await ctx.prisma.materialBatch.count({ where: { expiryDate: { lte: in90, gte: now } } })
       const expiringCritical = await ctx.prisma.materialBatch.count({ where: { expiryDate: { lte: in30, gte: now } } })
 
-      const pendingTaskCount = pendingInbound + pendingOutbound
+      const pendingTaskCount = await countActiveDocuments(ctx.prisma)
       const alertCount = await ctx.prisma.alert.count({ where: { resolved: false } })
-      const myApprovals = await enrichPendingTasks(ctx.prisma, approvalTasksRaw)
+      const myApprovals = await fetchMyPendingApprovals(ctx.prisma, ctx.identity!.role, 8)
+      const pendingTasks = await fetchActiveDocuments(ctx.prisma, 8)
 
-      const pendingTasks = [
-        ...inboundTasks.map((o) => ({
-          id: o.id,
-          docType: '采购入库',
-          orderNo: o.orderNo,
-          status: o.status,
-          partner: o.supplier?.name ?? '—',
-          createdAt: o.createdAt,
-          createdBy: o.createdBy?.name,
+      const [inboundByStatus, outboundByStatus, alertByType, recentMovements, orgCity, cityDestinations] = await Promise.all([
+        ctx.prisma.inboundOrder.groupBy({ by: ['status'], _count: { _all: true } }),
+        ctx.prisma.outboundOrder.groupBy({ by: ['status'], _count: { _all: true } }),
+        ctx.prisma.alert.groupBy({ by: ['type'], where: { resolved: false }, _count: { _all: true } }),
+        ctx.prisma.stockMovement.findMany({
+          where: {
+            createdAt: { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) },
+            type: { in: ['INBOUND', 'OUTBOUND'] },
+          },
+          select: { type: true, quantity: true, createdAt: true },
+        }),
+        readOrgCity(ctx.prisma),
+        ctx.prisma.outboundDestination.findMany({
+          where: { enabled: true },
+          select: { name: true, district: true, city: true },
+          orderBy: [{ sortOrder: 'asc' }, { district: 'asc' }],
+        }),
+      ])
+
+      const orgDestinations = cityDestinations.filter((d) => d.city === orgCity)
+      const destNames = orgDestinations.map((d) => d.name)
+
+      const outboundOrdersWithLines = await ctx.prisma.outboundOrder.findMany({
+        where: {
+          destination: destNames.length ? { in: destNames } : { not: null },
+          status: { notIn: ['DRAFT', 'REJECTED'] },
+        },
+        select: {
+          destination: true,
+          status: true,
+          lines: { select: { requestedQty: true, pickedQty: true } },
+        },
+      })
+
+      const destinationStats = new Map<string, { orderCount: number; quantity: number }>()
+      for (const order of outboundOrdersWithLines) {
+        if (!order.destination) continue
+        const bucket = destinationStats.get(order.destination) ?? { orderCount: 0, quantity: 0 }
+        bucket.orderCount += 1
+        const usePicked = order.status === 'COMPLETED' || order.status === 'SHIPPED'
+        for (const line of order.lines) {
+          bucket.quantity += usePicked && line.pickedQty > 0 ? line.pickedQty : line.requestedQty
+        }
+        destinationStats.set(order.destination, bucket)
+      }
+
+      const INBOUND_STATUS_LABELS: Record<string, string> = {
+        DRAFT: '草稿',
+        PENDING: '待审核',
+        RECEIVING: '收货中',
+        COMPLETED: '已完成',
+        CANCELLED: '已取消',
+      }
+      const OUTBOUND_STATUS_LABELS: Record<string, string> = {
+        DRAFT: '草稿',
+        PENDING: '待审核',
+        APPROVED: '已审核',
+        PICKING: '拣货中',
+        SHIPPED: '已发运',
+        COMPLETED: '已完成',
+        REJECTED: '已驳回',
+      }
+      const ALERT_TYPE_LABELS: Record<string, string> = {
+        EXPIRY: '效期',
+        LOW_STOCK: '低库存',
+        HIGH_STOCK: '高库存',
+      }
+
+      const categorySpecies = new Map<string, number>()
+      for (const m of inventorySummary) {
+        const qty = m.stockItems.reduce((s, i) => s + i.quantity, 0)
+        if (qty <= 0) continue
+        const name = m.category.name
+        categorySpecies.set(name, (categorySpecies.get(name) ?? 0) + 1)
+      }
+
+      const trendBuckets = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+        const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        return { month, label: `${d.getMonth() + 1}月`, inbound: 0, outbound: 0 }
+      })
+      const trendIndex = new Map(trendBuckets.map((b, i) => [b.month, i]))
+      for (const mv of recentMovements) {
+        const key = `${mv.createdAt.getFullYear()}-${String(mv.createdAt.getMonth() + 1).padStart(2, '0')}`
+        const idx = trendIndex.get(key)
+        if (idx === undefined) continue
+        const qty = Math.abs(mv.quantity)
+        if (mv.type === 'INBOUND') trendBuckets[idx]!.inbound += qty
+        else trendBuckets[idx]!.outbound += qty
+      }
+
+      const charts = {
+        expiryPie: [
+          { key: 'green', label: '安全', value: expiryStats.green, color: '#10b981' },
+          { key: 'yellow', label: '临期', value: expiryStats.yellow, color: '#fbbf24' },
+          { key: 'red', label: '预警', value: expiryStats.red, color: '#ef4444' },
+        ],
+        zoneBar: Object.entries(zoneHeatmap).map(([zone, quantity]) => ({
+          key: zone,
+          label: ZONE_LABELS[zone] ?? zone,
+          value: quantity,
         })),
-        ...outboundTasks.map((o) => ({
-          id: o.id,
-          docType: '物资出库',
-          orderNo: o.orderNo,
-          status: o.status,
-          partner: o.destination ?? o.recipient ?? '—',
-          createdAt: o.createdAt,
-          createdBy: o.createdBy?.name,
-        })),
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        categoryBar: [...categorySpecies.entries()]
+          .map(([label, value]) => ({ label, value }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 6),
+        inboundBar: inboundByStatus
+          .filter((x) => x._count._all > 0)
+          .map((x) => ({
+            key: x.status,
+            label: INBOUND_STATUS_LABELS[x.status] ?? x.status,
+            value: x._count._all,
+          })),
+        outboundBar: outboundByStatus
+          .filter((x) => x._count._all > 0)
+          .map((x) => ({
+            key: x.status,
+            label: OUTBOUND_STATUS_LABELS[x.status] ?? x.status,
+            value: x._count._all,
+          })),
+        alertPie: alertByType
+          .filter((x) => x._count._all > 0)
+          .map((x) => ({
+            key: x.type,
+            label: ALERT_TYPE_LABELS[x.type] ?? x.type,
+            value: x._count._all,
+            color: x.type === 'EXPIRY' ? '#f59e0b' : x.type === 'LOW_STOCK' ? '#ef4444' : '#8b5cf6',
+          })),
+        destinationBar: orgDestinations
+          .map((dest) => {
+            const stat = destinationStats.get(dest.name)
+            return {
+              key: dest.name,
+              label: dest.district,
+              value: stat?.quantity ?? 0,
+              orderCount: stat?.orderCount ?? 0,
+            }
+          })
+          .filter((x) => x.value > 0 || x.orderCount > 0)
+          .sort((a, b) => b.value - a.value),
+        destinationCity: orgCity,
+        ioTrend: trendBuckets,
+      }
 
       return {
         center: {
@@ -168,6 +277,7 @@ builder.queryField('dashboard', (t) =>
         },
         expiryHealth,
         stockWaterLevel,
+        charts,
         zoneHeatmap: Object.entries(zoneHeatmap).map(([zone, quantity]) => ({
           zone,
           label: ZONE_LABELS[zone] ?? zone,

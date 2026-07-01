@@ -1,9 +1,20 @@
 import * as React from 'react'
 import { cn } from 'lib/utils'
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+const Table = React.forwardRef<
+  HTMLTableElement,
+  React.HTMLAttributes<HTMLTableElement> & {
+    containerClassName?: string
+    containerStyle?: React.CSSProperties
+  }
+>(({ className, containerClassName, containerStyle, ...props }, ref) => (
+  <div className={cn('relative min-w-0 w-full', containerClassName)}>
+    <div
+      className="data-table-scroll relative w-full min-w-0 overflow-auto"
+      style={containerStyle}
+    >
+      <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    </div>
   </div>
 ))
 Table.displayName = 'Table'

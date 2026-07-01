@@ -23,7 +23,7 @@ export async function getInboundOrderForPrint(prisma: PrismaClient, id: string) 
 
   return {
     orderNo: order.orderNo,
-    createdAt: formatDate(order.createdAt),
+    createdAt: formatDate(order.orderDate ?? order.createdAt),
     status: formatStatus(order.status),
     contractNo: order.contractNo ?? '',
     remark: order.remark ?? '',
@@ -39,6 +39,7 @@ export async function getInboundOrderForPrint(prisma: PrismaClient, id: string) 
       odr: index + 1,
       name: line.material.name,
       spec: line.material.spec ?? '',
+      manufacturer: line.manufacturer ?? '',
       unit: line.material.unit,
       expectedQty: line.expectedQty,
       actualQty: line.actualQty,

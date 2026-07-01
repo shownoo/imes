@@ -9,8 +9,6 @@ import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -49,6 +47,11 @@ export default function WorkflowsIndex() {
   const flowRecord = data?.getApprovalFlow as { graph?: FlowGraph; name?: string; description?: string } | null
   const allFlows = (flowsData?.getApprovalFlows as Array<{ bizType: string }>) ?? []
 
+  const serverGraphKey = useMemo(
+    () => JSON.stringify(flowRecord?.graph ?? null),
+    [flowRecord?.graph],
+  )
+
   useEffect(() => {
     if (flowRecord?.graph) {
       setGraph(normalizeGraphEdges(flowRecord.graph))
@@ -56,7 +59,8 @@ export default function WorkflowsIndex() {
       setGraph(emptyGraph())
     }
     setSelectedId(null)
-  }, [flowRecord, bizType])
+    setSaved(false)
+  }, [serverGraphKey, bizType])
 
   const selectedNode = useMemo(
     () => graph.nodes.find((n) => n.id === selectedId) ?? null,
@@ -90,17 +94,15 @@ export default function WorkflowsIndex() {
     setSaved(false)
   }
 
-  const deleteSelectedNode = () => {
-    if (!selectedId) return
-    const node = graph.nodes.find((n) => n.id === selectedId)
-    if (!node || node.type !== 'approval') return
+  const deleteNodesById = useCallback((nodeIds: string[]) => {
+    const idSet = new Set(nodeIds)
     setGraph((g) => ({
-      nodes: g.nodes.filter((n) => n.id !== selectedId),
-      edges: g.edges.filter((e) => e.source !== selectedId && e.target !== selectedId),
+      nodes: g.nodes.filter((n) => !idSet.has(n.id)),
+      edges: g.edges.filter((e) => !idSet.has(e.source) && !idSet.has(e.target)),
     }))
-    setSelectedId(null)
+    setSelectedId((current) => (current && idSet.has(current) ? null : current))
     setSaved(false)
-  }
+  }, [])
 
   const askDeleteConfirm = useCallback(
     (nodeIds: string[], edgeCount: number) => {
@@ -115,6 +117,15 @@ export default function WorkflowsIndex() {
     [graph.nodes],
   )
 
+  const confirmDeleteNodes = useCallback(
+    async (nodeIds: string[], edgeCount: number) => {
+      if (!(await askDeleteConfirm(nodeIds, edgeCount))) return false
+      deleteNodesById(nodeIds)
+      return true
+    },
+    [askDeleteConfirm, deleteNodesById],
+  )
+
   const finishDeleteConfirm = (approved: boolean) => {
     const resolve = deleteResolveRef.current
     if (!resolve) return
@@ -124,12 +135,12 @@ export default function WorkflowsIndex() {
   }
 
   const handleDeleteButtonClick = async () => {
-    if (!selectedId) return
-    const node = graph.nodes.find((n) => n.id === selectedId)
+    const nodeId = selectedId
+    if (!nodeId) return
+    const node = graph.nodes.find((n) => n.id === nodeId)
     if (!node || node.type !== 'approval') return
-    const edgeCount = graph.edges.filter((e) => e.source === selectedId || e.target === selectedId).length
-    if (!(await askDeleteConfirm([selectedId], edgeCount))) return
-    deleteSelectedNode()
+    const edgeCount = graph.edges.filter((e) => e.source === nodeId || e.target === nodeId).length
+    await confirmDeleteNodes([nodeId], edgeCount)
   }
 
   const handleSave = async () => {
@@ -208,7 +219,7 @@ export default function WorkflowsIndex() {
               selectedNodeId={selectedId}
               onGraphChange={(g) => { setGraph(normalizeGraphEdges(g)); setSaved(false) }}
               onSelectNode={setSelectedId}
-              onConfirmDelete={({ nodeIds, edgeCount }) => askDeleteConfirm(nodeIds, edgeCount)}
+              onConfirmDelete={({ nodeIds, edgeCount }) => confirmDeleteNodes(nodeIds, edgeCount)}
               height={420}
             />
           </CardContent>
@@ -316,8 +327,10 @@ export default function WorkflowsIndex() {
         </Card>
       </div>
 
-      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) finishDeleteConfirm(false) }}>
-        <AlertDialogContent>
+      <AlertDialog open={!!deleteConfirm}>
+        <AlertDialogContent
+          onEscapeKeyDown={() => finishDeleteConfirm(false)}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除节点？</AlertDialogTitle>
             <AlertDialogDescription>
@@ -331,16 +344,13 @@ export default function WorkflowsIndex() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => finishDeleteConfirm(false)}>取消</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault()
-                finishDeleteConfirm(true)
-              }}
+            <Button variant="outline" onClick={() => finishDeleteConfirm(false)}>取消</Button>
+            <Button
+              variant="destructive"
+              onClick={() => finishDeleteConfirm(true)}
             >
               确认删除
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

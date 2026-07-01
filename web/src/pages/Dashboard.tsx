@@ -5,10 +5,14 @@ import { useWorkspace } from 'contexts/workspace-context'
 import { LeaderKpiGrid } from 'components/leader-kpi-grid'
 import { LeaderPageHeader } from 'components/leader-page-header'
 import { LeaderPanelCard } from 'components/leader-panel-card'
-import { ZoneHeatmap, StockWaterLevel, ExpiryHealthPanel, Badge, DataTable, Button, ToolbarButton } from 'components/common'
+import { ZoneHeatmap, StockWaterLevel, ExpiryHealthPanel, DashboardChartExpiryPie, DashboardChartAlertPie, DashboardChartZoneBar, DashboardChartCategoryBar, DashboardChartInboundBar, DashboardChartOutboundBar, DashboardChartDestinationBar, DashboardChartIoTrend, Badge, DataTable, Button, ToolbarButton, TABLE_KEYS } from 'components/common'
+import type { DashboardChartsData } from 'components/dashboard-stats-charts'
+import { WorkspaceCustomizeMenu } from 'components/workspace-customize-menu'
 import { formatNumber, formatDate, STATUS_LABELS, statusBadgeVariant } from 'lib/utils'
 import type { WorkspaceWidgetId } from 'lib/workspace-theme'
+import { CHART_WIDGET_IDS } from 'lib/workspace-theme'
 import type { ApprovalInboxItem } from 'lib/approval-flow'
+import { activeDocumentPath, type ActiveDocument } from 'lib/workbench'
 
 const DASHBOARD = gql`query Dashboard { dashboard }`
 
@@ -26,7 +30,8 @@ type DashboardData = {
   expiryHealth: { green: number; yellow: number; red: number; greenPct: number; yellowPct: number; redPct: number; healthScore: number }
   stockWaterLevel: Array<{ material: { name: string; unit: string }; quantity: number; min: number; max: number; status: string; pct: number }>
   zoneHeatmap: Array<{ zone: string; label: string; quantity: number; capacity: number }>
-  pendingTasks: Array<{ id: string; docType: string; orderNo: string; status: string; partner: string; createdAt: string; createdBy?: string }>
+  charts: DashboardChartsData
+  pendingTasks: ActiveDocument[]
   myApprovals: ApprovalInboxItem[]
   recentAlerts: Array<{ id: string; type: string; level: string; message: string; material?: { name: string } }>
   exportSnapshot: Record<string, unknown>
@@ -47,6 +52,13 @@ export default function Dashboard() {
   const { data, loading, refetch } = useQuery(DASHBOARD)
   const d = data?.dashboard as DashboardData | undefined
   const { visibleWidgets } = useWorkspace()
+  const charts = d?.charts
+
+  const chartPanel = (id: WorkspaceWidgetId, title: string, render: (data: DashboardChartsData) => React.ReactNode) => (
+    <LeaderPanelCard key={id} title={title}>
+      {charts ? render(charts) : null}
+    </LeaderPanelCard>
+  )
 
   const widgets: Record<WorkspaceWidgetId, React.ReactNode> = {
     kpi: (
@@ -56,8 +68,20 @@ export default function Dashboard() {
             { label: '物资品种', value: d?.center.speciesCount ?? '—', unit: '种', icon: Package },
             { label: '库存总量', value: d ? formatNumber(d.center.stockTotal) : '—', icon: Boxes },
             { label: '库容利用率', value: d ? `${d.center.utilizationRate}%` : '—', icon: Percent },
-            { label: '待办单据', value: d?.center.pendingTaskCount ?? '—', icon: ClipboardList },
-            ...(d?.center.approvalInboxCount ? [{ label: '待我审批', value: d.center.approvalInboxCount, unit: '条', icon: ClipboardCheck }] : []),
+            {
+              label: '进行中单据',
+              value: d?.center.pendingTaskCount ?? '—',
+              unit: '单',
+              icon: ClipboardList,
+              onClick: () => navigate('/inbound'),
+            },
+            {
+              label: '待我审批',
+              value: d?.center.approvalInboxCount ?? '—',
+              unit: '条',
+              icon: ClipboardCheck,
+              onClick: () => navigate('/tasks'),
+            },
           ]}
         />
         {d && (
@@ -70,6 +94,18 @@ export default function Dashboard() {
         )}
       </div>
     ),
+    chartExpiryPie: chartPanel('chartExpiryPie', '效期分布', (c) => <DashboardChartExpiryPie charts={c} />),
+    chartAlertPie: chartPanel('chartAlertPie', '预警构成', (c) => <DashboardChartAlertPie charts={c} />),
+    chartZoneBar: chartPanel('chartZoneBar', '分区库存', (c) => <DashboardChartZoneBar charts={c} />),
+    chartCategoryBar: chartPanel('chartCategoryBar', '物资大类品种', (c) => <DashboardChartCategoryBar charts={c} />),
+    chartInboundBar: chartPanel('chartInboundBar', '入库单状态', (c) => <DashboardChartInboundBar charts={c} />),
+    chartOutboundBar: chartPanel('chartOutboundBar', '出库单状态', (c) => <DashboardChartOutboundBar charts={c} />),
+    chartDestinationBar: chartPanel(
+      'chartDestinationBar',
+      charts ? `出库目的地 · ${charts.destinationCity}` : '出库目的地',
+      (c) => <DashboardChartDestinationBar charts={c} />,
+    ),
+    chartIoTrend: chartPanel('chartIoTrend', '近6月出入库趋势', (c) => <DashboardChartIoTrend charts={c} />),
     expiry: (
       <LeaderPanelCard
         key="expiry"
@@ -100,56 +136,87 @@ export default function Dashboard() {
         {d ? <ZoneHeatmap data={d.zoneHeatmap} /> : null}
       </LeaderPanelCard>
     ),
-    pendingTasks: (
-      <div key="pendingTasks">
-        {(d?.myApprovals?.length ?? 0) > 0 && (
-          <div className="mb-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3
-                className="flex items-center gap-2"
-                style={{
-                  fontFamily: 'var(--leader-font-body)',
-                  fontSize: 'var(--cheta-leader-page-subtitle-size, 1.125rem)',
-                  fontWeight: 'var(--cheta-title-weight, 600)',
-                  color: 'var(--leader-text)',
-                }}
-              >
-                <ClipboardCheck className="size-5 text-primary" />待我审批<Badge variant="destructive">{d?.myApprovals.length}</Badge>
-              </h3>
-              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate('/tasks')}>
-                全部待办 →'</Button>
-            </div>
-            <DataTable
-              loading={loading}
-              columns={[
-                { key: 'bizLabel', title: '类型', render: (r) => <Badge variant="info">{String(r.bizLabel)}</Badge> },
-                { key: 'orderNo', title: '单号' },
-                { key: 'nodeLabel', title: '节点', render: (r) => String(r.nodeLabel ?? '审批') },
-                { key: 'summary', title: '摘要' },
-                { key: 'createdAt', title: '时间', render: (r) => formatDate(String(r.createdAt)) },
-                {
-                  key: 'link',
-                  title: '',
-                  render: (r) => (
-                    <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(String(r.docPath))}>
-                      处理</Button>
-                  ),
-                },
-              ]}
-              rows={(d?.myApprovals ?? []) as unknown as Array<Record<string, unknown>>}
-            />
+    myApprovals: (
+      <LeaderPanelCard
+        key="myApprovals"
+        header={
+          <div className="flex items-center justify-between gap-2">
+            <h3
+              className="flex items-center gap-2"
+              style={{
+                fontFamily: 'var(--leader-font-body)',
+                fontSize: 'var(--cheta-leader-page-subtitle-size, 1.125rem)',
+                fontWeight: 'var(--cheta-title-weight, 600)',
+                color: 'var(--leader-text)',
+              }}
+            >
+              <ClipboardCheck className="size-5 text-primary" />
+              待我审批
+              {(d?.myApprovals?.length ?? 0) > 0 && (
+                <Badge variant="destructive">{d?.myApprovals.length}</Badge>
+              )}
+            </h3>
+            <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate('/tasks')}>
+              待办中心 →
+            </Button>
           </div>
+        }
+      >
+        {(d?.myApprovals?.length ?? 0) > 0 ? (
+          <DataTable
+            tableKey={TABLE_KEYS.DASHBOARD_APPROVALS}
+            loading={loading}
+            columns={[
+              { key: 'bizLabel', title: '类型', render: (r) => <Badge variant="info">{String(r.bizLabel)}</Badge> },
+              { key: 'orderNo', title: '单号' },
+              { key: 'nodeLabel', title: '节点', render: (r) => String(r.nodeLabel ?? '审批') },
+              { key: 'summary', title: '摘要' },
+              { key: 'createdAt', title: '时间', render: (r) => formatDate(String(r.createdAt)) },
+              {
+                key: 'link',
+                title: '',
+                render: (r) => (
+                  <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(String(r.docPath))}>
+                    处理
+                  </Button>
+                ),
+              },
+            ]}
+            rows={(d?.myApprovals ?? []) as unknown as Array<Record<string, unknown>>}
+          />
+        ) : (
+          <p style={{ fontSize: '0.875rem', color: 'var(--leader-text-muted)' }}>暂无待审批任务</p>
         )}
-        <h3
-          className="mb-4"
-          style={{
-            fontFamily: 'var(--leader-font-body)',
-            fontSize: 'var(--cheta-leader-page-subtitle-size, 1.125rem)',
-            fontWeight: 'var(--cheta-title-weight, 600)',
-            color: 'var(--leader-text)',
-          }}
-        >待办单据</h3>
+      </LeaderPanelCard>
+    ),
+    activeDocuments: (
+      <LeaderPanelCard
+        key="activeDocuments"
+        header={
+          <div className="flex items-center justify-between gap-2">
+            <h3
+              style={{
+                fontFamily: 'var(--leader-font-body)',
+                fontSize: 'var(--cheta-leader-page-subtitle-size, 1.125rem)',
+                fontWeight: 'var(--cheta-title-weight, 600)',
+                color: 'var(--leader-text)',
+              }}
+            >
+              进行中单据
+            </h3>
+            <div className="flex gap-2">
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate('/inbound')}>
+                入库
+              </Button>
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate('/outbound')}>
+                出库
+              </Button>
+            </div>
+          </div>
+        }
+      >
         <DataTable
+          tableKey={TABLE_KEYS.DASHBOARD_DOCUMENTS}
           loading={loading}
           columns={[
             { key: 'docType', title: '类型', render: (r) => <Badge variant="info">{String(r.docType)}</Badge> },
@@ -158,10 +225,24 @@ export default function Dashboard() {
             { key: 'partner', title: '供应商/目的地' },
             { key: 'createdBy', title: '创建人', render: (r) => String(r.createdBy ?? '—') },
             { key: 'createdAt', title: '时间', render: (r) => formatDate(String(r.createdAt)) },
+            {
+              key: 'link',
+              title: '',
+              render: (r) => (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0"
+                  onClick={() => navigate(activeDocumentPath(r as unknown as ActiveDocument))}
+                >
+                  查看
+                </Button>
+              ),
+            },
           ]}
           rows={(d?.pendingTasks ?? []) as Array<Record<string, unknown>>}
         />
-      </div>
+      </LeaderPanelCard>
     ),
     alerts: (
       <div key="alerts">
@@ -175,6 +256,7 @@ export default function Dashboard() {
           }}
         >智能预警</h3>
         <DataTable
+          tableKey={TABLE_KEYS.DASHBOARD_ALERTS}
           loading={loading}
           columns={[
             { key: 'level', title: '级别', render: (r) => <Badge variant={statusBadgeVariant(String(r.level))}>{String(r.level)}</Badge> },
@@ -188,7 +270,10 @@ export default function Dashboard() {
     ),
   }
 
-  const panels: WorkspaceWidgetId[] = ['expiry', 'waterLevel']
+  const panels: WorkspaceWidgetId[] = [
+    'expiry', 'waterLevel',
+    ...CHART_WIDGET_IDS.filter((id) => id !== 'chartDestinationBar' && id !== 'chartIoTrend'),
+  ]
   let panelBuffer: React.ReactNode[] = []
 
   const rendered: React.ReactNode[] = []
@@ -227,9 +312,10 @@ export default function Dashboard() {
     <div className="leader-workspace-grid space-y-6">
       <LeaderPageHeader
         title='工作台'
-        desc="应急物资仓储运营一屏统览 · 账号菜单可自定义界面与布局"
+        desc="运营态势一屏统览 · 统计图与各模块可在「工作台定制」中单独开关与排序"
         action={
           <div className="flex flex-wrap gap-2">
+            <WorkspaceCustomizeMenu />
             <ToolbarButton onClick={() => d && exportDashboard(d)}>
               <Download className="size-3.5" />
               导出

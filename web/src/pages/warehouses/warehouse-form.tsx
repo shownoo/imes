@@ -3,14 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
   FormPage,
-  FormSection,
-  FormStack,
-  InsetFormGroup,
-  InsetFormRow,
-  insetFormInputClass,
-  insetFormSelectTriggerClass,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  groupedFormInputClass,
+  groupedFormSelectTriggerClass,
 } from 'components/form-page'
-import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { GET_WAREHOUSES, ADD_WAREHOUSE, ZONE_OPTIONS } from './queries'
@@ -53,7 +52,7 @@ export default function WarehouseForm() {
           },
         },
       })
-      navigate('/warehouses?tab=warehouse')
+      navigate('/materials?tab=warehouses')
     } catch (e) {
       alert(e instanceof Error ? e.message : '保存失败')
     }
@@ -64,65 +63,52 @@ export default function WarehouseForm() {
   return (
     <FormPage
       mode={isEdit ? 'edit' : 'create'}
-      backTo="/warehouses?tab=warehouse"
+      backTo="/materials?tab=warehouses"
       backLabel='仓库'
-      footer={
-        <FormProcessButtons
-          onCancel={() => navigate('/warehouses?tab=warehouse')}
-          onSubmit={handleSave}
-          loading={saving}
-          submitTitle="保存"
-        />
-      }
+      onSubmit={handleSave}
+      onCancel={() => navigate('/materials?tab=warehouses')}
+      submitLoading={saving}
     >
-      <FormStack>
-        <FormSection title="仓库信息" desc="编码、名称、类型与容量" inset>
-          <InsetFormGroup>
-            <InsetFormRow label='仓库编码' required>
-              <Input
-                className={insetFormInputClass}
-                value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
-              />
-            </InsetFormRow>
-            <InsetFormRow label='仓库名称' required>
-              <Input
-                className={insetFormInputClass}
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </InsetFormRow>
-            <InsetFormRow label='库房类型'>
+      <GroupedFormStack>
+        <GroupedFormSection title="仓库信息">
+          <GroupedFormRow>
+            <GroupedFormItem label='仓库编码' required>
+              <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </GroupedFormItem>
+            <GroupedFormItem label='仓库名称' required>
+              <Input className={groupedFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label='库房类型'>
               <Select value={form.zone} onValueChange={(v) => setForm({ ...form, zone: v })}>
-                <SelectTrigger className={insetFormSelectTriggerClass}>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className={groupedFormSelectTriggerClass}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ZONE_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </InsetFormRow>
-            <InsetFormRow label='面积(m²)'>
+            </GroupedFormItem>
+            <GroupedFormItem label='面积(m²)'>
               <Input
                 type="number"
-                className={insetFormInputClass}
+                className={groupedFormInputClass}
                 value={String(form.area)}
                 onChange={(e) => setForm({ ...form, area: e.target.value === '' ? '' : Number(e.target.value) })}
               />
-            </InsetFormRow>
-            <InsetFormRow label='容量'>
-              <Input
-                type="number"
-                className={insetFormInputClass}
-                value={String(form.capacity)}
-                onChange={(e) => setForm({ ...form, capacity: e.target.value === '' ? '' : Number(e.target.value) })}
-              />
-            </InsetFormRow>
-          </InsetFormGroup>
-        </FormSection>
-      </FormStack>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormItem label='容量'>
+            <Input
+              type="number"
+              className={groupedFormInputClass}
+              value={String(form.capacity)}
+              onChange={(e) => setForm({ ...form, capacity: e.target.value === '' ? '' : Number(e.target.value) })}
+            />
+          </GroupedFormItem>
+        </GroupedFormSection>
+      </GroupedFormStack>
     </FormPage>
   )
 }

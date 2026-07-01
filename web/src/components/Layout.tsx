@@ -1,10 +1,8 @@
-import type { ElementType } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
   Package,
-  Warehouse,
   ArrowDownToLine,
   ArrowUpFromLine,
   Boxes,
@@ -22,7 +20,7 @@ import { ApprovalInboxNavItem, ApprovalReminderBanner } from 'components/approva
 import { useApprovalDesktopNotify } from 'hooks/use-approval-desktop-notify'
 import { useAuth } from 'lib/auth'
 import { useWorkspace } from 'contexts/workspace-context'
-import { navMenuButtonClass } from 'lib/nav-styles'
+import { topNavLinkClass } from 'lib/nav-styles'
 import { SidebarInset, SidebarProvider } from 'components/ui/sidebar'
 import { TooltipProvider } from 'components/ui/tooltip'
 import { cn } from 'lib/utils'
@@ -30,12 +28,11 @@ import { cn } from 'lib/utils'
 const NAV: AppNavItem[] = [
   { to: '/', icon: LayoutDashboard, labelKey: '工作台' },
   { to: '/materials', icon: Package, labelKey: '基础数据' },
-  { to: '/warehouses', icon: Warehouse, labelKey: '仓库货位' },
-  { to: '/inbound', icon: ArrowDownToLine, labelKey: '采购入库' },
-  { to: '/outbound', icon: ArrowUpFromLine, labelKey: '出库管理' },
-  { to: '/inventory', icon: Boxes, labelKey: '库存盘点' },
-  { to: '/alerts', icon: Bell, labelKey: '智能预警' },
-  { to: '/trace', icon: ScanLine, labelKey: '扫码追溯' },
+  { to: '/inbound', icon: ArrowDownToLine, labelKey: '采购入库', shortLabelKey: '入库' },
+  { to: '/outbound', icon: ArrowUpFromLine, labelKey: '出库管理', shortLabelKey: '出库' },
+  { to: '/inventory', icon: Boxes, labelKey: '库存盘点', shortLabelKey: '盘点' },
+  { to: '/alerts', icon: Bell, labelKey: '智能预警', shortLabelKey: '预警' },
+  { to: '/trace', icon: ScanLine, labelKey: '扫码追溯', shortLabelKey: '追溯' },
 ]
 
 const ADMIN_NAV: AppNavItem[] = [{ to: '/admin', icon: Settings, labelKey: '系统管理' }]
@@ -48,8 +45,10 @@ function Brand() {
         <Shield className="size-4 text-primary-foreground" />
       </div>
       <div className="hidden sm:block">
-        <p className="font-display text-sm font-bold leading-none">IMES</p>
-        <p className="text-[10px] text-muted-foreground">{t('应急物资智能管理')}</p>
+        <p className="truncate font-display text-sm font-bold leading-tight">
+          IMES
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t('应急物资智能管理')}</span>
+        </p>
       </div>
     </div>
   )
@@ -58,21 +57,23 @@ function Brand() {
 function AppNavLinks({ items, tasksActive }: { items: AppNavItem[]; tasksActive: boolean }) {
   const { t } = useTranslation()
   const location = useLocation()
-  const linkClass = (active: boolean) => navMenuButtonClass(active, true)
+  const linkClass = (active: boolean) => topNavLinkClass(active)
 
   return (
     <>
-      {items.map(({ to, icon: Icon, labelKey }) => {
+      {items.map(({ to, icon: Icon, labelKey, shortLabelKey }) => {
         const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
         const label = t(labelKey)
+        const shortLabel = shortLabelKey ? t(shortLabelKey) : label
         return (
           <NavLink key={to} to={to} end={to === '/'} className={linkClass(active)} title={label}>
             <Icon className="size-4 shrink-0" strokeWidth={1.75} />
-            <span className="truncate">{label}</span>
+            <span className="truncate xl:hidden">{shortLabel}</span>
+            <span className="hidden truncate xl:inline">{label}</span>
           </NavLink>
         )
       })}
-      <ApprovalInboxNavItem className={linkClass(tasksActive)} />
+      <ApprovalInboxNavItem className={linkClass(tasksActive)} compact />
     </>
   )
 }

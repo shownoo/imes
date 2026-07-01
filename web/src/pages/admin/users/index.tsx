@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import { Plus, Search } from 'lucide-react'
-import { DataTable, RowActions, Badge, Button } from 'components/common'
+import { DataTable, RowActions, Badge, Button, TABLE_KEYS } from 'components/common'
 import { DebounceInput } from 'components/debounce-input'
 import { ListToolbar, SearchInputShell } from 'components/section-menu'
 import { useAuth } from 'lib/auth'
@@ -63,6 +63,7 @@ export default function UsersIndex() {
       )}
 
       <DataTable
+        tableKey={TABLE_KEYS.ADMIN_USERS}
         loading={loading}
         columns={[
           { key: 'username', title: '用户名' },

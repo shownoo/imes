@@ -3,13 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
   FormPage,
-  FormSection,
-  FormStack,
-  InsetFormGroup,
-  InsetFormRow,
-  insetFormInputClass,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  groupedFormInputClass,
 } from 'components/form-page'
-import { FormProcessButtons } from 'components/form-process-buttons'
 import { Input } from 'components/ui/input'
 import { GET_SUPPLIERS, ADD_SUPPLIER } from './queries'
 
@@ -66,39 +65,38 @@ export default function SupplierForm() {
       mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=suppliers"
       backLabel='供应商'
-      footer={
-        <FormProcessButtons
-          onCancel={() => navigate('/materials?tab=suppliers')}
-          onSubmit={handleSave}
-          loading={saving}
-          submitTitle="保存"
-        />
-      }
+      onSubmit={handleSave}
+      onCancel={() => navigate('/materials?tab=suppliers')}
+      submitLoading={saving}
     >
-      <FormStack>
-        <FormSection title="供应商信息" desc="编码、联系方式与资质" inset>
-          <InsetFormGroup>
-            <InsetFormRow label='供应商编码' required>
-              <Input className={insetFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='供应商名称' required>
-              <Input className={insetFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='联系人'>
-              <Input className={insetFormInputClass} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='联系电话'>
-              <Input className={insetFormInputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='地址'>
-              <Input className={insetFormInputClass} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            </InsetFormRow>
-            <InsetFormRow label='资质证照'>
-              <Input className={insetFormInputClass} value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} />
-            </InsetFormRow>
-          </InsetFormGroup>
-        </FormSection>
-      </FormStack>
+      <GroupedFormStack>
+        <GroupedFormSection title="供应商信息">
+          <GroupedFormRow>
+            <GroupedFormItem label='供应商编码' required>
+              <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </GroupedFormItem>
+            <GroupedFormItem label='供应商名称' required>
+              <Input className={groupedFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label='联系人'>
+              <Input className={groupedFormInputClass} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+            </GroupedFormItem>
+            <GroupedFormItem label='联系电话'>
+              <Input className={groupedFormInputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label='地址'>
+              <Input className={groupedFormInputClass} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            </GroupedFormItem>
+            <GroupedFormItem label='资质证照'>
+              <Input className={groupedFormInputClass} value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} />
+            </GroupedFormItem>
+          </GroupedFormRow>
+        </GroupedFormSection>
+      </GroupedFormStack>
     </FormPage>
   )
 }

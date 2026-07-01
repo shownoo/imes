@@ -1,7 +1,7 @@
 import { builder } from '../builder.js'
 import { getInboundOrderForPrint } from '../lib/print-data.js'
 import { parseInboundText } from '../lib/parse-inbound-text.js'
-import { genOrderNo, genQrCode, addMonths } from '../lib/utils.js'
+import { containsI, genOrderNo, genQrCode, addMonths } from '../lib/utils.js'
 import { formatStatus } from '../lib/log-diff.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { startApprovalInstance, findPendingTaskForBiz, completeApprovalTask } from '../lib/approval.js'
@@ -11,7 +11,11 @@ function snapInboundOrder(order: {
   warehouseId?: string | null
   supplierId?: string | null
   contractNo?: string | null
+  contact?: string | null
+  phone?: string | null
   remark?: string | null
+  orderDate?: Date | null
+  plannedReceiveDate?: Date | null
   status?: string
   lines?: Array<{ material?: { name: string }; expectedQty: number }>
 }) {
@@ -19,7 +23,11 @@ function snapInboundOrder(order: {
     warehouseId: order.warehouseId,
     supplierId: order.supplierId,
     contractNo: order.contractNo,
+    contact: order.contact,
+    phone: order.phone,
     remark: order.remark,
+    orderDate: order.orderDate,
+    plannedReceiveDate: order.plannedReceiveDate,
     status: order.status ? formatStatus(order.status) : undefined,
     lineCount: order.lines?.length ?? 0,
     lines: order.lines?.map((l) => `${l.material?.name ?? '?'}×${l.expectedQty}`).join('；') || '—',
@@ -29,6 +37,7 @@ function snapInboundOrder(order: {
 const InboundLineInput = builder.inputType('InboundLineInput', {
   fields: (t) => ({
     materialId: t.id({ required: true }),
+    manufacturer: t.string({ required: false }),
     expectedQty: t.int({ required: true }),
     batchNo: t.string({ required: false }),
     productionDate: t.field({ type: 'DateTime', required: false }),
@@ -41,7 +50,11 @@ const CreateInboundInput = builder.inputType('CreateInboundInput', {
     warehouseId: t.id({ required: false }),
     supplierId: t.id({ required: false }),
     contractNo: t.string({ required: false }),
+    contact: t.string({ required: false }),
+    phone: t.string({ required: false }),
     remark: t.string({ required: false }),
+    orderDate: t.field({ type: 'DateTime', required: false }),
+    plannedReceiveDate: t.field({ type: 'DateTime', required: false }),
     lines: t.field({ type: [InboundLineInput], required: true }),
   }),
 })
@@ -52,7 +65,11 @@ const UpdateInboundInput = builder.inputType('UpdateInboundInput', {
     warehouseId: t.id({ required: false }),
     supplierId: t.id({ required: false }),
     contractNo: t.string({ required: false }),
+    contact: t.string({ required: false }),
+    phone: t.string({ required: false }),
     remark: t.string({ required: false }),
+    orderDate: t.field({ type: 'DateTime', required: false }),
+    plannedReceiveDate: t.field({ type: 'DateTime', required: false }),
     lines: t.field({ type: [InboundLineInput], required: false }),
   }),
 })
@@ -82,13 +99,28 @@ builder.queryField('getInboundOrders', (t) =>
       type: t.arg.string({ required: false }),
       status: t.arg.string({ required: false }),
       warehouseId: t.arg.id({ required: false }),
+      orderNo: t.arg.string({ required: false }),
+      supplierId: t.arg.id({ required: false }),
+      dateFrom: t.arg({ type: 'DateTime', required: false }),
+      dateTo: t.arg({ type: 'DateTime', required: false }),
       input: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: async (_, { type, status, warehouseId, input }, ctx) => {
+    resolve: async (_, { type, status, warehouseId, orderNo, supplierId, dateFrom, dateTo, input }, ctx) => {
       const where: Record<string, unknown> = {}
       if (type) where.type = type
       if (status) where.status = status
       if (warehouseId) where.warehouseId = warehouseId
+      if (orderNo) where.orderNo = containsI(orderNo)
+      if (supplierId) where.supplierId = supplierId
+      if (dateFrom || dateTo) {
+        where.orderDate = {}
+        if (dateFrom) (where.orderDate as { gte?: Date }).gte = dateFrom
+        if (dateTo) {
+          const end = new Date(dateTo)
+          end.setHours(23, 59, 59, 999)
+          ;(where.orderDate as { lte?: Date }).lte = end
+        }
+      }
       const [orders, count] = await Promise.all([
         ctx.prisma.inboundOrder.findMany({
           where,
@@ -101,7 +133,7 @@ builder.queryField('getInboundOrders', (t) =>
             approvedBy: true,
             lines: { include: { material: true } },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { orderDate: 'desc' },
         }),
         ctx.prisma.inboundOrder.count({ where }),
       ])
@@ -131,11 +163,11 @@ builder.queryField('getInboundOrder', (t) =>
 
       const lines = await Promise.all(
         order.lines.map(async (line) => {
-          if (!line.batchNo || line.actualQty <= 0) return { ...line, stockItems: [] as unknown[] }
+          if (line.actualQty <= 0) return { ...line, stockItems: [] as unknown[] }
           const stockItems = await ctx.prisma.stockItem.findMany({
             where: {
               materialId: line.materialId,
-              batch: { inboundOrderId: order.id, batchNo: line.batchNo },
+              batch: { inboundOrderId: order.id },
             },
             include: { material: true, batch: true, shelf: { include: { warehouse: true } } },
             orderBy: { createdAt: 'asc' },
@@ -166,6 +198,7 @@ builder.mutationField('createInboundOrder', (t) =>
     resolve: async (_, { input }, ctx) => {
       const inboundType = (input.type ?? 'PURCHASE') as 'PURCHASE' | 'TRANSFER' | 'RETURN'
       if (!input.warehouseId) throw new Error('请选择收货仓库')
+      if (inboundType === 'PURCHASE' && !input.supplierId) throw new Error('请选择供应商')
       await ctx.prisma.warehouse.findUniqueOrThrow({ where: { id: input.warehouseId } })
       const prefix = inboundType === 'PURCHASE' ? 'CG' : inboundType === 'TRANSFER' ? 'DB' : 'TH'
       const result = await ctx.prisma.inboundOrder.create({
@@ -176,11 +209,16 @@ builder.mutationField('createInboundOrder', (t) =>
           warehouseId: input.warehouseId,
           supplierId: input.supplierId,
           contractNo: input.contractNo,
+          contact: input.contact,
+          phone: input.phone,
           remark: input.remark,
+          orderDate: input.orderDate ?? new Date(),
+          plannedReceiveDate: input.plannedReceiveDate,
           createdById: ctx.identity!.userId,
           lines: {
             create: input.lines.map((l) => ({
               materialId: l.materialId,
+              manufacturer: l.manufacturer,
               expectedQty: l.expectedQty,
               batchNo: l.batchNo,
               productionDate: l.productionDate,
@@ -221,6 +259,7 @@ builder.mutationField('updateInboundOrder', (t) =>
           data: lines.map((l) => ({
             orderId: id,
             materialId: l.materialId,
+            manufacturer: l.manufacturer,
             expectedQty: l.expectedQty,
             batchNo: l.batchNo,
             productionDate: l.productionDate,
@@ -390,6 +429,11 @@ builder.mutationField('receiveInboundLine', (t) =>
 
       if (line.order.status !== 'RECEIVING') throw new Error('单据未处于收货状态')
 
+      const pending = line.expectedQty - line.actualQty
+      if (input.actualQty <= 0 || input.actualQty > pending) {
+        throw new Error(`实收数量须在 1～${pending} 之间`)
+      }
+
       const expiryDate = addMonths(input.productionDate, line.material.category.shelfLifeMonths)
 
       const batch = await ctx.prisma.materialBatch.upsert({
@@ -433,7 +477,7 @@ builder.mutationField('receiveInboundLine', (t) =>
       await ctx.prisma.inboundOrderLine.update({
         where: { id: input.lineId },
         data: {
-          actualQty: input.actualQty,
+          actualQty: { increment: input.actualQty },
           batchNo: input.batchNo,
           productionDate: input.productionDate,
           expiryDate,

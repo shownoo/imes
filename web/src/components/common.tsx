@@ -1,51 +1,66 @@
+import { useMemo } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { Badge } from 'components/ui/badge'
 import { Button } from 'components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from 'components/ui/card'
 import { Skeleton } from 'components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table'
-import {
-  gridTableCellClass,
-  gridTableHeadClass,
-  gridTableRowClass,
-  imesDataTableClass,
-  isCodeColumn,
-  TableCodeCell,
-} from 'components/grid-table'
-import { InfoTip } from 'components/info-tip'
 import { LeaderPageHeader } from 'components/leader-page-header'
 import { LeaderSurfaceCard } from 'components/leader-surface-card'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { cn, formatNumber } from 'lib/utils'
+import {
+  DataTable as TanStackDataTable,
+  type DataTableColumn,
+  toImesColumns,
+} from 'components/data-table'
+
+export { type DataTableColumn } from 'components/data-table'
+export { TABLE_KEYS } from 'components/data-table'
 
 export { ZoneHeatmap } from 'components/zone-heatmap'
+export {
+  DashboardChartExpiryPie,
+  DashboardChartAlertPie,
+  DashboardChartZoneBar,
+  DashboardChartCategoryBar,
+  DashboardChartInboundBar,
+  DashboardChartOutboundBar,
+  DashboardChartDestinationBar,
+  DashboardChartIoTrend,
+  type DashboardChartsData,
+} from 'components/dashboard-stats-charts'
 
 export function PageHeader({ title, desc, titleTip, action }: { title: string; desc?: string; titleTip?: string; action?: React.ReactNode }) {
   return <LeaderPageHeader title={title} desc={desc} titleTip={titleTip} action={action} />
 }
 
-export type DataTableColumn = {
-  key: string
-  title: string
-  tip?: string
-  /** code：编码/单号列，使用 Apple 数字字体栈 */
-  cell?: 'code' | 'text' | 'default'
-  render?: (row: Record<string, unknown>) => React.ReactNode
-}
-
-function renderDataCell(col: DataTableColumn, row: Record<string, unknown>) {
-  if (col.render) return col.render(row)
-  const value = row[col.key]
-  if (isCodeColumn(col)) return <TableCodeCell>{value as string}</TableCodeCell>
-  if (value == null || value === '') return null
-  return String(value)
-}
-
-export function DataTable({ columns, rows, loading }: {
+export function DataTable({
+  columns,
+  rows,
+  loading,
+  tableKey,
+  total,
+  page = 1,
+  pageSize = 20,
+  onPageChange,
+  onPageSizeChange,
+  onRefresh,
+}: {
   columns: DataTableColumn[]
   rows: Record<string, unknown>[]
   loading?: boolean
+  /** 设置后启用列宽拖拽、列顺序/显示自定义，并持久化到 localStorage */
+  tableKey?: string
+  total?: number
+  page?: number
+  pageSize?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  onRefresh?: () => void
 }) {
+  const tanStackColumns = useMemo(() => toImesColumns(columns), [columns])
+  const paginationEnabled = total != null && onPageChange != null && onPageSizeChange != null
+
   if (loading) {
     return (
       <LeaderSurfaceCard flat contentClassName="space-y-3 p-6">
@@ -58,43 +73,27 @@ export function DataTable({ columns, rows, loading }: {
 
   return (
     <LeaderSurfaceCard flat contentClassName="overflow-hidden p-0">
-      <Table className={imesDataTableClass}>
-        <TableHeader>
-          <TableRow className="border-b border-border/30 bg-transparent hover:bg-transparent">
-            {columns.map((c) => (
-              <TableHead key={c.key} className={gridTableHeadClass} title={c.tip}>
-                <span className="inline-flex items-center gap-1">
-                  {c.title}
-                  {c.tip && (
-                    <InfoTip side="bottom" className="opacity-0 transition-opacity group-hover/th:opacity-100">
-                      {c.tip}
-                    </InfoTip>
-                  )}
-                </span>
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.length === 0 ? (
-            <TableRow className="border-0 hover:bg-transparent">
-              <TableCell colSpan={columns.length} className={`${gridTableCellClass} h-28 text-center text-muted-foreground`}>
-                暂无数据
-              </TableCell>
-            </TableRow>
-          ) : (
-            rows.map((row, i) => (
-              <TableRow key={String(row.id ?? i)} className={gridTableRowClass}>
-                {columns.map((c) => (
-                  <TableCell key={c.key} className={gridTableCellClass}>
-                    {renderDataCell(c, row)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      <TanStackDataTable
+        columns={tanStackColumns}
+        data={rows}
+        tableKey={tableKey}
+        enableColumnResize={Boolean(tableKey)}
+        enableColumnReorder={Boolean(tableKey)}
+        showColumnToggle={Boolean(tableKey)}
+        getRowId={(row, index) => String(row.id ?? index)}
+        pagination={
+          paginationEnabled
+            ? {
+                page,
+                pageSize,
+                total,
+                onPageChange,
+                onPageSizeChange,
+                handleRefresh: onRefresh,
+              }
+            : undefined
+        }
+      />
     </LeaderSurfaceCard>
   )
 }

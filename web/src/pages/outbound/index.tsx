@@ -1,8 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import { Eye, Trash2, Pencil } from 'lucide-react'
-import { PageHeader, DataTable, Button, PageCreateButton } from 'components/common'
+import { PageHeader, DataTable, Button, PageCreateButton, TABLE_KEYS } from 'components/common'
+import {
+  OrderDateFilterField,
+  OrderListFilterToolbar,
+  OrderListStatusRow,
+  OrderNoFilterField,
+  useOrderDateFilter,
+} from 'components/order-list-chrome'
 import { StatusBadge } from 'components/status-badge'
 import { StatusFilterBar } from 'components/status-filter-bar'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
@@ -15,41 +22,61 @@ const OUTBOUND_TITLE_TIP = '申请 → 审核 → FIFO拣货 → 拆零确认 �
 export default function OutboundIndex() {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('all')
+  const [orderNo, setOrderNo] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const { onDateRangeChange, ...dateVars } = useOrderDateFilter()
 
   const refetchOpts = { refetchQueries: ['GetOutboundOrders'] }
-  const { data, loading } = useQuery(GET_OUTBOUND, {
-    variables: { status: statusFilter === 'all' ? undefined : statusFilter, input: { take: 50 } },
+  const { data, loading, refetch } = useQuery(GET_OUTBOUND, {
+    variables: {
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      orderNo: orderNo || undefined,
+      ...dateVars,
+      input: { take: pageSize, skip: (page - 1) * pageSize },
+    },
   })
   const [delOrder] = useMutation(DEL, refetchOpts)
 
-  const orders = (data?.getOutboundOrders as { orders: Array<Record<string, unknown>> })?.orders ?? []
+  const outboundResult = data?.getOutboundOrders as { orders: Array<Record<string, unknown>>; count: number } | undefined
+  const orders = outboundResult?.orders ?? []
+  const total = outboundResult?.count ?? 0
+
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, orderNo, dateVars.dateFrom, dateVars.dateTo])
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: orders.length }
+    const counts: Record<string, number> = { all: total }
     for (const o of orders) {
       const s = String(o.status)
       counts[s] = (counts[s] ?? 0) + 1
     }
     return counts
-  }, [orders])
+  }, [orders, total])
 
   return (
     <div>
-      <PageHeader
-        title="出库管理"
-        titleTip={OUTBOUND_TITLE_TIP}
-        action={<PageCreateButton label="新建" onClick={() => navigate('/outbound/create')} />}
-      />
+      <PageHeader title="出库管理" titleTip={OUTBOUND_TITLE_TIP} />
 
-      <StatusFilterBar
-        className="mb-5"
-        value={statusFilter}
-        options={OUTBOUND_STATUS_FILTERS}
-        onChange={setStatusFilter}
-        counts={statusFilter === 'all' ? statusCounts : undefined}
-      />
+      <OrderListFilterToolbar
+        trailing={<PageCreateButton label="新建" onClick={() => navigate('/outbound/create')} />}
+      >
+        <OrderNoFilterField onSearch={setOrderNo} />
+        <OrderDateFilterField onChange={onDateRangeChange} />
+      </OrderListFilterToolbar>
+
+      <OrderListStatusRow>
+        <StatusFilterBar
+          value={statusFilter}
+          options={OUTBOUND_STATUS_FILTERS}
+          onChange={setStatusFilter}
+          counts={statusFilter === 'all' ? statusCounts : undefined}
+        />
+      </OrderListStatusRow>
 
       <DataTable
+        tableKey={TABLE_KEYS.OUTBOUND_MASTER}
         loading={loading}
         columns={[
           {
@@ -116,6 +143,15 @@ export default function OutboundIndex() {
           },
         ]}
         rows={orders}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
+        onRefresh={() => void refetch()}
       />
     </div>
   )

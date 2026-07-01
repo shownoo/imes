@@ -12,8 +12,18 @@ import {
   gridTableRowLastClass,
   gridTableSelectTriggerClass,
 } from 'components/grid-table'
+import {
+  TableForm,
+  tableFormCellClass,
+  tableFormHeaderClass,
+  tableFormIndexClass,
+  tableFormInputClass,
+  tableFormReadonlyClass,
+  tableFormSelectTriggerClass,
+} from 'components/table-form'
+import { MaterialSearchSelect } from 'components/material-search-select'
+import { QuantityInput } from 'components/quantity-input'
 import { Input } from 'components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table'
 import { cn } from 'lib/utils'
 
@@ -44,7 +54,23 @@ export function materialSummary(material: MaterialOption | undefined) {
   return parts.length ? parts.join(' · ') : null
 }
 
-type MaterialLine = { materialId: string; quantity: number }
+function materialReadonlyColumns(material: MaterialOption | undefined) {
+  return {
+    spec: materialField(material, 'spec'),
+    unit: materialField(material, 'unit'),
+    category: materialCategoryName(material),
+  }
+}
+
+function TableFormReadonlyCell({ value }: { value: string | null }) {
+  return (
+    <span className={cn(tableFormReadonlyClass, !value && 'text-muted-foreground/45')}>
+      {value || '—'}
+    </span>
+  )
+}
+
+type MaterialLine = { materialId: string; quantity: number; manufacturer?: string }
 
 export function MaterialLinesEditor({
   lines,
@@ -53,6 +79,9 @@ export function MaterialLinesEditor({
   onAddLine,
   footer,
   quantityLabel = '数量',
+  hideFooterAdd,
+  manufacturerEditable,
+  variant = 'grid',
 }: {
   lines: MaterialLine[]
   materials: MaterialOption[]
@@ -60,6 +89,11 @@ export function MaterialLinesEditor({
   onAddLine: () => void
   footer?: ReactNode
   quantityLabel?: string
+  hideFooterAdd?: boolean
+  /** 厂牌列可手动输入（不随物资带出） */
+  manufacturerEditable?: boolean
+  /** grid：列表风格；table-form：dbm 采购清单 */
+  variant?: 'grid' | 'table-form'
 }) {
   const materialMap = useMemo(() => {
     const map = new Map<string, MaterialOption>()
@@ -77,6 +111,100 @@ export function MaterialLinesEditor({
 
   const removeLine = (index: number) => {
     onChange(lines.filter((_, j) => j !== index))
+  }
+
+  if (variant === 'table-form') {
+    const colCount = manufacturerEditable ? 7 : 6
+    return (
+      <TableForm wide>
+        <colgroup>
+          <col className="table-form__col-index" />
+          <col className="table-form__col-material" />
+          {manufacturerEditable ? <col className="table-form__col-manufacturer" /> : null}
+          <col className="table-form__col-spec" />
+          <col className="table-form__col-unit" />
+          <col className="table-form__col-category" />
+          <col className="table-form__col-qty" />
+        </colgroup>
+        <tbody>
+          <tr>
+            <td className={tableFormHeaderClass} title="序号">#</td>
+            <td className={cn(tableFormHeaderClass, 'text-left')}>物资</td>
+            {manufacturerEditable ? <td className={tableFormHeaderClass}>厂牌</td> : null}
+            <td className={tableFormHeaderClass}>规格</td>
+            <td className={tableFormHeaderClass}>单位</td>
+            <td className={tableFormHeaderClass}>大类</td>
+            <td className={cn(tableFormHeaderClass, 'text-right')}>{quantityLabel}</td>
+          </tr>
+          {lines.length === 0 ? (
+            <tr>
+              <td colSpan={colCount} className={cn(tableFormCellClass, 'h-16 text-center text-[13px] text-muted-foreground')}>
+                暂无明细
+              </td>
+            </tr>
+          ) : (
+            lines.map((line, i) => {
+              const material = line.materialId ? materialMap.get(line.materialId) : undefined
+              const cols = materialReadonlyColumns(material)
+              return (
+                <tr key={i}>
+                  <td className={tableFormIndexClass}>
+                    <div className="flex items-center justify-center gap-0.5">
+                      {lines.length > 1 && (
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive"
+                          title="删除此行"
+                          onClick={() => removeLine(i)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                      <span className="text-[12px] tabular-nums text-muted-foreground">{i + 1}</span>
+                    </div>
+                  </td>
+                  <td className={tableFormCellClass}>
+                    <MaterialSearchSelect
+                      materials={materials}
+                      value={line.materialId}
+                      onChange={(materialId) => updateLine(i, { materialId })}
+                      className={tableFormSelectTriggerClass}
+                    />
+                  </td>
+                  {manufacturerEditable ? (
+                    <td className={tableFormCellClass}>
+                      <Input
+                        className={tableFormInputClass}
+                        value={line.manufacturer ?? ''}
+                        onChange={(e) => updateLine(i, { manufacturer: e.target.value })}
+                        placeholder="厂牌"
+                      />
+                    </td>
+                  ) : null}
+                  <td className={tableFormCellClass}>
+                    <TableFormReadonlyCell value={cols.spec} />
+                  </td>
+                  <td className={tableFormCellClass}>
+                    <TableFormReadonlyCell value={cols.unit} />
+                  </td>
+                  <td className={tableFormCellClass}>
+                    <TableFormReadonlyCell value={cols.category} />
+                  </td>
+                  <td className={tableFormCellClass}>
+                    <QuantityInput
+                      min={1}
+                      className={cn(tableFormInputClass, 'text-right tabular-nums')}
+                      value={line.quantity}
+                      onChange={(quantity) => updateLine(i, { quantity })}
+                    />
+                  </td>
+                </tr>
+              )
+            })
+          )}
+        </tbody>
+      </TableForm>
+    )
   }
 
   return (
@@ -109,34 +237,23 @@ export function MaterialLinesEditor({
                 >
                   <TableCell className={gridTableCellClass}>
                     <div className="space-y-1">
-                      <Select
-                        value={line.materialId || 'none'}
-                        onValueChange={(v) => updateLine(i, { materialId: v === 'none' ? '' : v })}
-                      >
-                        <SelectTrigger className={gridTableSelectTriggerClass}>
-                          <SelectValue placeholder="选择物资" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">选择物资</SelectItem>
-                          {materials.map((m) => (
-                            <SelectItem key={String(m.id)} value={String(m.id)}>
-                              {String(m.code)} · {String(m.name)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <MaterialSearchSelect
+                        materials={materials}
+                        value={line.materialId}
+                        onChange={(materialId) => updateLine(i, { materialId })}
+                        className={gridTableSelectTriggerClass}
+                      />
                       {summary && (
                         <p className="truncate pl-0.5 text-xs text-muted-foreground">{summary}</p>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className={gridTableCellClass}>
-                    <Input
-                      type="number"
+                    <QuantityInput
                       min={1}
                       className={cn(gridTableInputClass, 'ml-auto w-24 text-right tabular-nums')}
                       value={line.quantity}
-                      onChange={(e) => updateLine(i, { quantity: Number(e.target.value) })}
+                      onChange={(quantity) => updateLine(i, { quantity })}
                     />
                   </TableCell>
                   <TableCell className={gridTableCellClass}>
@@ -159,13 +276,15 @@ export function MaterialLinesEditor({
           )}
         </TableBody>
       </Table>
-      <div className="flex flex-wrap items-center gap-2 border-t border-border/30 px-4 py-2.5">
-        {footer}
-        <AddButton title="行" onClick={onAddLine} />
-        {filledCount > 0 && (
-          <span className="text-xs tabular-nums text-muted-foreground">已填 {filledCount} 行</span>
-        )}
-      </div>
+      {(footer || !hideFooterAdd || filledCount > 0) && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/30 px-4 py-2.5">
+          {footer}
+          {!hideFooterAdd && <AddButton title="行" onClick={onAddLine} />}
+          {filledCount > 0 && (
+            <span className="text-xs tabular-nums text-muted-foreground">已填 {filledCount} 行</span>
+          )}
+        </div>
+      )}
     </GridTableFrame>
   )
 }

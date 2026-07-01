@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { Users, ShieldCheck, ScrollText, GitBranch, Bell, HardDrive, Printer } from 'lucide-react'
 import { PageHeader } from 'components/common'
 import { SectionNav } from 'components/section-menu'

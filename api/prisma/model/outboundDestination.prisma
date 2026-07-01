@@ -1,0 +1,15 @@
+/// 出库目的地（基础数据）
+model OutboundDestination {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  code      String   @unique
+  city      String   @default("武汉市")
+  district  String
+  name      String
+  sortOrder Int      @default(0)
+  enabled   Boolean  @default(true)
+
+  @@unique([city, district])
+  @@index([city])
+}

@@ -1,6 +1,27 @@
 import { getStatusConfig } from 'lib/order-status'
 import { translate } from 'locales'
-import { cn } from 'lib/utils'
+import { SegmentFilterBar, type SegmentFilterConfig } from './segment-filter-bar'
+
+const STATUS_ACTIVE_BG: Record<string, string> = {
+  neutral: 'bg-muted/70',
+  amber: 'bg-amber-50 dark:bg-amber-950/35',
+  blue: 'bg-sky-50 dark:bg-sky-950/35',
+  cyan: 'bg-cyan-50 dark:bg-cyan-950/35',
+  indigo: 'bg-indigo-50 dark:bg-indigo-950/35',
+  teal: 'bg-teal-50 dark:bg-teal-950/35',
+  green: 'bg-emerald-50 dark:bg-emerald-950/35',
+  red: 'bg-red-50 dark:bg-red-950/35',
+}
+
+function statusToSegment(id: string): SegmentFilterConfig | null {
+  const config = getStatusConfig(id)
+  return {
+    label: config.label,
+    dotClass: config.dotClass,
+    filterActiveClass: config.filterActiveClass,
+    activeBgClass: STATUS_ACTIVE_BG[config.tone],
+  }
+}
 
 type StatusFilterBarProps = {
   value: string
@@ -10,62 +31,17 @@ type StatusFilterBarProps = {
   className?: string
 }
 
-/** 状态筛选 — 分段 pill，选中态带语义色环 */
+/** 状态筛选 — 分段 pill，选中态带语义色 */
 export function StatusFilterBar({ value, options, onChange, counts, className }: StatusFilterBarProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-wrap gap-1 rounded-xl border bg-muted/25 p-1',
-        className,
-      )}
-      style={{ borderColor: 'var(--leader-card-border, hsl(var(--border)))' }}
-      role="tablist"
-      aria-label={translate('按状态筛选')}
-    >
-      {options.map((id) => {
-        const active = value === id
-        const config = id === 'all' ? null : getStatusConfig(id)
-        const label = id === 'all' ? translate('全部') : config!.label
-        const count = counts?.[id]
-
-        return (
-          <span key={id}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onChange(id)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-all',
-                active
-                  ? cn(
-                      'bg-background font-medium text-foreground shadow-sm ring-1',
-                      config?.filterActiveClass ?? 'ring-primary/20',
-                    )
-                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
-              )}
-            >
-              {config && (
-                <span
-                  className={cn('size-1.5 shrink-0 rounded-full', config.dotClass, !active && 'opacity-70')}
-                  aria-hidden
-                />
-              )}
-              {label}
-              {count != null && count > 0 && (
-                <span
-                  className={cn(
-                    'min-w-[1.125rem] rounded-md px-1 text-[10px] font-semibold tabular-nums',
-                    active ? 'bg-muted text-muted-foreground' : 'bg-muted/60 text-muted-foreground/80',
-                  )}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          </span>
-        )
-      })}
-    </div>
+    <SegmentFilterBar
+      value={value}
+      options={options}
+      onChange={onChange}
+      counts={counts}
+      getConfig={statusToSegment}
+      ariaLabel={translate('按状态筛选')}
+      className={className}
+    />
   )
 }

@@ -1,15 +1,25 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import { Eye, Trash2 } from 'lucide-react'
-import { PageHeader, DataTable, Badge, Button, PageCreateButton } from 'components/common'
+import { PageHeader, DataTable, Badge, Button, PageCreateButton, TABLE_KEYS } from 'components/common'
+import {
+  OrderDateFilterField,
+  OrderListFilterToolbar,
+  OrderListStatusRow,
+  OrderNoFilterField,
+  useOrderDateFilter,
+} from 'components/order-list-chrome'
+import { ListFilterField } from 'components/list-filter-toolbar'
 import { StatusBadge } from 'components/status-badge'
 import { StatusFilterBar } from 'components/status-filter-bar'
 import { WarehouseFilter } from 'components/warehouse-filter'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { INBOUND_STATUS_FILTERS } from 'lib/order-status'
+import { listFilterSelectTriggerClass } from 'lib/list-index-chrome'
 import { INBOUND_TYPE_LABELS, formatDate } from 'lib/utils'
-import { GET_INBOUND, GET_WAREHOUSES, DEL } from './queries'
+import { GET_INBOUND, GET_WAREHOUSES, GET_SUPPLIERS, DEL } from './queries'
 
 const INBOUND_TITLE_TIP = '选单清点 → 批次效期 → 蓝牙赋码 → 扫码上架'
 
@@ -17,55 +27,91 @@ export default function InboundIndex() {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('all')
   const [warehouseFilter, setWarehouseFilter] = useState('all')
+  const [orderNo, setOrderNo] = useState('')
+  const [supplierFilter, setSupplierFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const { onDateRangeChange, ...dateVars } = useOrderDateFilter()
 
   const refetchOpts = { refetchQueries: ['GetInboundOrders'] }
   const { data: whData } = useQuery(GET_WAREHOUSES)
-  const { data, loading } = useQuery(GET_INBOUND, {
+  const { data: supData } = useQuery(GET_SUPPLIERS, { variables: { input: { take: 200 } } })
+  const { data, loading, refetch } = useQuery(GET_INBOUND, {
     variables: {
       type: 'PURCHASE',
       status: statusFilter === 'all' ? undefined : statusFilter,
       warehouseId: warehouseFilter === 'all' ? undefined : warehouseFilter,
-      input: { take: 50 },
+      orderNo: orderNo || undefined,
+      supplierId: supplierFilter === 'all' ? undefined : supplierFilter,
+      ...dateVars,
+      input: { take: pageSize, skip: (page - 1) * pageSize },
     },
   })
   const [delOrder] = useMutation(DEL, refetchOpts)
 
   const warehouses = (whData?.getWarehouses as { warehouses: Array<{ id: string; name: string }> })?.warehouses ?? []
-  const orders = (data?.getInboundOrders as { orders: Array<Record<string, unknown>> })?.orders ?? []
+  const suppliers = (supData?.getSuppliers as { suppliers: Array<{ id: string; name: string }> })?.suppliers ?? []
+  const inboundResult = data?.getInboundOrders as { orders: Array<Record<string, unknown>>; count: number } | undefined
+  const orders = inboundResult?.orders ?? []
+  const total = inboundResult?.count ?? 0
+
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, warehouseFilter, orderNo, supplierFilter, dateVars.dateFrom, dateVars.dateTo])
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: orders.length }
+    const counts: Record<string, number> = { all: total }
     for (const o of orders) {
       const s = String(o.status)
       counts[s] = (counts[s] ?? 0) + 1
     }
     return counts
-  }, [orders])
+  }, [orders, total])
 
   return (
     <div>
-      <PageHeader
-        title="采购入库"
-        titleTip={INBOUND_TITLE_TIP}
-        action={<PageCreateButton label="新建" onClick={() => navigate('/inbound/create')} />}
-      />
+      <PageHeader title="采购入库" titleTip={INBOUND_TITLE_TIP} />
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <OrderListFilterToolbar
+        trailing={<PageCreateButton label="新建" onClick={() => navigate('/inbound/create')} />}
+      >
+        <OrderNoFilterField onSearch={setOrderNo} />
+        <ListFilterField variant="corp">
+          <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+            <SelectTrigger className={listFilterSelectTriggerClass}>
+              <SelectValue placeholder="供应商" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部供应商</SelectItem>
+              {suppliers.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ListFilterField>
+        <OrderDateFilterField placeholder="入库日期" onChange={onDateRangeChange} />
+      </OrderListFilterToolbar>
+
+      <OrderListStatusRow
+        trailing={
+          <WarehouseFilter
+            value={warehouseFilter}
+            onChange={setWarehouseFilter}
+            warehouses={warehouses}
+            label="仓库"
+          />
+        }
+      >
         <StatusFilterBar
           value={statusFilter}
           options={INBOUND_STATUS_FILTERS}
           onChange={setStatusFilter}
           counts={statusFilter === 'all' ? statusCounts : undefined}
         />
-        <WarehouseFilter
-          value={warehouseFilter}
-          onChange={setWarehouseFilter}
-          warehouses={warehouses}
-          label="仓库"
-        />
-      </div>
+      </OrderListStatusRow>
 
       <DataTable
+        tableKey={TABLE_KEYS.INBOUND_PURCHASE_MASTER}
         loading={loading}
         columns={[
           {
@@ -89,7 +135,7 @@ export default function InboundIndex() {
           { key: 'supplier', title: '供应商', tip: '物资供货方', render: (r) => (r.supplier as { name?: string })?.name ?? '—' },
           { key: 'contractNo', title: '合同号', tip: '关联采购合同编号', render: (r) => String(r.contractNo ?? '—') },
           { key: 'lines', title: '明细', tip: '入库物资行数', render: (r) => `${(r.lines as unknown[])?.length ?? 0} 项` },
-          { key: 'createdAt', title: '创建时间', tip: '单据首次创建时间', render: (r) => formatDate(String(r.createdAt)) },
+          { key: 'createdAt', title: '入库日期', tip: '单据业务日期', render: (r) => formatDate(String(r.orderDate ?? r.createdAt)) },
           {
             key: 'action',
             title: '操作',
@@ -118,6 +164,15 @@ export default function InboundIndex() {
           },
         ]}
         rows={orders}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
+        onRefresh={() => void refetch()}
       />
     </div>
   )

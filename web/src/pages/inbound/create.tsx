@@ -3,14 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
   FormPage,
-  FormSection,
-  FormStack,
-  InsetFormGroup,
-  InsetFormRow,
-  insetFormInputClass,
-  insetFormSelectTriggerClass,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  GroupedFormRemark,
+  groupedFormInputClass,
+  groupedFormSelectTriggerClass,
+  InlineDatePicker,
+  DatePicker,
+  todayDateStr,
+  localDateToIso,
 } from 'components/form-page'
-import { FormProcessButtons } from 'components/form-process-buttons'
+import { SupplierSearchSelect } from 'components/supplier-search-select'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { CREATE, GET_SUPPLIERS, GET_MATERIALS, GET_WAREHOUSES, type InboundLineRow } from './queries'
@@ -19,13 +24,17 @@ import { InboundLinesEditor } from './inbound-lines-editor'
 import type { ImportResult } from './inbound-import-panel'
 import { useInboundDocumentImport } from './use-inbound-document-import'
 
-const emptyLine = (): InboundLineRow => ({ materialId: '', expectedQty: 1 })
+const emptyLine = (): InboundLineRow => ({ materialId: '', expectedQty: 1, manufacturer: '' })
 
 export default function InboundCreate() {
   const navigate = useNavigate()
   const [warehouseId, setWarehouseId] = useState('')
   const warehouseTouched = useRef(false)
+  const [orderDate, setOrderDate] = useState(todayDateStr)
+  const [plannedReceiveDate, setPlannedReceiveDate] = useState('')
   const [supplierId, setSupplierId] = useState('')
+  const [contact, setContact] = useState('')
+  const [phone, setPhone] = useState('')
   const [contractNo, setContractNo] = useState('')
   const [remark, setRemark] = useState('')
   const [lines, setLines] = useState<InboundLineRow[]>([emptyLine()])
@@ -42,10 +51,22 @@ export default function InboundCreate() {
   const materials = (matData?.getMaterials as { materials: Array<Record<string, unknown>> })?.materials ?? []
 
   useEffect(() => {
+    if (!supplierId) {
+      setContact('')
+      setPhone('')
+      return
+    }
+    const supplier = suppliers.find((s) => String(s.id) === supplierId)
+    if (!supplier) return
+    setContact(String(supplier.contact ?? ''))
+    setPhone(String(supplier.phone ?? ''))
+  }, [supplierId, suppliers])
+
+  useEffect(() => {
     if (!warehouseId && warehouses[0]) {
       setWarehouseId(String(warehouses[0].id))
     }
-  }, [warehouses, warehouseId])
+  }, [warehouseId, warehouses])
 
   useEffect(() => {
     if (warehouseTouched.current) return
@@ -65,6 +86,7 @@ export default function InboundCreate() {
     const parsedLines = result.rows.map((r) => ({
       materialId: r.materialId,
       expectedQty: r.expectedQty,
+      manufacturer: '',
     }))
     setLines((prev) => {
       const isBlank = prev.length <= 1 && !prev[0]?.materialId
@@ -88,6 +110,10 @@ export default function InboundCreate() {
       setFormError('请选择收货仓库')
       return
     }
+    if (!supplierId) {
+      setFormError('请选择供应商')
+      return
+    }
     if (!lines.some((l) => l.materialId && l.expectedQty > 0)) {
       setFormError('请添加入库明细，或上传清单识别')
       return
@@ -98,9 +124,13 @@ export default function InboundCreate() {
           input: {
             type: 'PURCHASE',
             warehouseId,
-            supplierId: supplierId || undefined,
+            supplierId,
             contractNo: contractNo || undefined,
+            contact: contact || undefined,
+            phone: phone || undefined,
             remark: remark || undefined,
+            orderDate: localDateToIso(orderDate),
+            plannedReceiveDate: plannedReceiveDate ? localDateToIso(plannedReceiveDate) : undefined,
             lines: lines.filter((l) => l.materialId),
           },
         },
@@ -118,95 +148,108 @@ export default function InboundCreate() {
       backTo="/inbound"
       backLabel="采购入库"
       wide
-      footer={
-        <FormProcessButtons
-          onCancel={() => navigate('/inbound')}
-          onSubmit={handleCreate}
-          loading={loading || documentImport.isParsing}
-        />
-      }
+      onSubmit={handleCreate}
+      onCancel={() => navigate('/inbound')}
+      submitLoading={loading || documentImport.isParsing}
+      submitTitle="创建"
     >
       {formError && (
-        <p className="text-sm text-destructive" role="alert">{formError}</p>
+        <p className="mb-3 px-1 text-sm text-destructive" role="alert">{formError}</p>
       )}
 
-      <FormStack>
-        <FormSection
-          title="采购信息"
-          desc="收货仓库、供应商与合同信息"
-          tip="选物资后，收货仓库将按物资大类自动推荐"
-          inset
-          narrow
-        >
-          <InsetFormGroup>
-            <InsetFormRow label="收货仓库" required>
-              <Select
-                value={warehouseId || undefined}
-                onValueChange={(v) => {
-                  warehouseTouched.current = true
-                  setWarehouseId(v)
-                }}
-              >
-                <SelectTrigger className={insetFormSelectTriggerClass}>
-                  <SelectValue placeholder="请选择" />
-                </SelectTrigger>
-                <SelectContent>
-                  {warehouses.map((w) => (
-                    <SelectItem key={String(w.id)} value={String(w.id)}>{String(w.name)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </InsetFormRow>
-            <InsetFormRow label="供应商">
-              <Select value={supplierId || undefined} onValueChange={setSupplierId}>
-                <SelectTrigger className={insetFormSelectTriggerClass}>
-                  <SelectValue placeholder="请选择" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((s) => (
-                    <SelectItem key={String(s.id)} value={String(s.id)}>{String(s.name)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </InsetFormRow>
-            <InsetFormRow label="采购合同号">
+      <GroupedFormStack>
+        <GroupedFormSection title="采购信息">
+          <GroupedFormRow>
+            <GroupedFormItem label="供应商" required>
+              <SupplierSearchSelect
+                suppliers={suppliers}
+                value={supplierId}
+                onChange={setSupplierId}
+                placeholder="请选择"
+                className={groupedFormSelectTriggerClass}
+              />
+            </GroupedFormItem>
+            <GroupedFormItem label="采购合同号">
               <Input
-                className={insetFormInputClass}
+                className={groupedFormInputClass}
                 value={contractNo}
                 onChange={(e) => setContractNo(e.target.value)}
                 placeholder="选填"
               />
-            </InsetFormRow>
-            <InsetFormRow label="备注">
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="联系人">
               <Input
-                className={insetFormInputClass}
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
+                className={groupedFormInputClass}
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
                 placeholder="选填"
               />
-            </InsetFormRow>
-          </InsetFormGroup>
-        </FormSection>
+            </GroupedFormItem>
+            <GroupedFormItem label="电话">
+              <Input
+                className={groupedFormInputClass}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="选填"
+              />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="入库日期" required>
+              <InlineDatePicker value={orderDate} onChange={(v) => v && setOrderDate(v)} />
+            </GroupedFormItem>
+            <GroupedFormItem label="计划收货日期">
+              <InlineDatePicker
+                value={plannedReceiveDate || undefined}
+                onChange={(v) => setPlannedReceiveDate(v ?? '')}
+                placeholder="选填"
+              />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormItem label="收货仓库" required>
+            <Select
+              value={warehouseId || undefined}
+              onValueChange={(v) => {
+                warehouseTouched.current = true
+                setWarehouseId(v)
+              }}
+            >
+              <SelectTrigger className={groupedFormSelectTriggerClass}>
+                <SelectValue placeholder="请选择" />
+              </SelectTrigger>
+              <SelectContent>
+                {warehouses.map((w) => (
+                  <SelectItem key={String(w.id)} value={String(w.id)}>{String(w.name)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </GroupedFormItem>
+        </GroupedFormSection>
 
-        <FormSection title="入库明细" desc="选择物资并填写预期数量，可上传清单识别">
-          <InboundLinesEditor
-            hideTitle
-            lines={lines}
-            materials={materials}
-            onChange={setLines}
-            onAddLine={() => setLines([...lines, emptyLine()])}
-            importProps={{
-              isParsing: documentImport.isParsing,
-              parsingKind: documentImport.parsingKind,
-              parseError: documentImport.parseError,
-              result: importResult,
-              onImportPdf: documentImport.importPdf,
-              onImportImage: documentImport.importImage,
-              onDismissError: documentImport.clearError,
-            }}
-          />
-        </FormSection>
-      </FormStack>
+        <GroupedFormRemark
+          value={remark}
+          onChange={setRemark}
+          placeholder="选填"
+        />
+
+        <InboundLinesEditor
+          lines={lines}
+          materials={materials}
+          onChange={setLines}
+          onAddLine={() => setLines([...lines, emptyLine()])}
+          importProps={{
+            isParsing: documentImport.isParsing,
+            parsingKind: documentImport.parsingKind,
+            parseError: documentImport.parseError,
+            result: importResult,
+            onImportPdf: documentImport.importPdf,
+            onImportImage: documentImport.importImage,
+            onDismissError: documentImport.clearError,
+          }}
+        />
+      </GroupedFormStack>
     </FormPage>
   )
 }

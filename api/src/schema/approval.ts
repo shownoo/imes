@@ -3,9 +3,9 @@ import {
   completeApprovalTask,
   getApprovalInstance,
   buildInstanceProgress,
-  enrichPendingTasks,
   countMyPendingTasks,
 } from '../lib/approval.js'
+import { fetchMyPendingApprovals } from '../lib/workbench.js'
 import { IdInput } from './input-types.js'
 
 const SaveApprovalFlowInput = builder.inputType('SaveApprovalFlowInput', {
@@ -118,16 +118,8 @@ builder.queryField('getMyPendingApprovalTasks', (t) =>
   t.field({
     type: 'JSON',
     authScopes: { authenticated: true },
-    resolve: async (_, __, ctx) => {
-      const role = ctx.identity!.role
-      const tasks = await ctx.prisma.approvalTask.findMany({
-        where: { status: 'PENDING', assigneeRole: role },
-        include: { instance: { include: { flow: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-      })
-      return enrichPendingTasks(ctx.prisma, tasks)
-    },
+    resolve: async (_, __, ctx) =>
+      fetchMyPendingApprovals(ctx.prisma, ctx.identity!.role, 50),
   }),
 )
 

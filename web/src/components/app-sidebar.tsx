@@ -20,7 +20,7 @@ import { GET_INBOX_COUNT } from 'pages/tasks/queries'
 import { navMenuButtonClass } from 'lib/nav-styles'
 import { cn } from 'lib/utils'
 
-export type AppNavItem = { to: string; icon: ElementType; labelKey: string }
+export type AppNavItem = { to: string; icon: ElementType; labelKey: string; shortLabelKey?: string }
 
 function SidebarCollapseButton({ collapsed }: { collapsed: boolean }) {
   const { toggleSidebar } = useSidebar()
@@ -48,10 +48,10 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
         <Shield className="size-3.5 text-primary-foreground" />
       </div>
       {!collapsed && (
-        <div className="min-w-0">
-          <p className="truncate font-display text-[13px] font-semibold leading-none tracking-tight">IMES</p>
-          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{t('应急物资智能管理')}</p>
-        </div>
+        <p className="min-w-0 truncate font-display text-[12px] font-semibold leading-tight tracking-tight">
+          IMES
+          <span className="ml-1 font-normal text-muted-foreground">{t('应急物资智能管理')}</span>
+        </p>
       )}
     </div>
   )
@@ -81,7 +81,7 @@ function NavMenuItem({
         tooltip={label}
         className={navMenuButtonClass(active, collapsed)}
       >
-        <NavLink to={to} end={end}>
+        <NavLink to={to} end={end ?? to === '/'}>
           <Icon className="size-[15px] shrink-0" strokeWidth={1.75} />
           <span className="truncate">{label}</span>
         </NavLink>
@@ -103,12 +103,12 @@ function TasksNavItem() {
       <SidebarMenuButton
         asChild
         isActive={active}
-        tooltip="我的待办"
+        tooltip="待办中心"
         className={navMenuButtonClass(active, collapsed)}
       >
         <NavLink to="/tasks">
           <ClipboardCheck className="size-[15px] shrink-0" strokeWidth={1.75} />
-          <span className="truncate">我的待办</span>
+          <span className="truncate">待办中心</span>
         </NavLink>
       </SidebarMenuButton>
       {count > 0 && (

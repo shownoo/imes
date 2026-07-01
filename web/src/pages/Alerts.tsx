@@ -1,6 +1,6 @@
 import { gql, useQuery, useMutation } from '@apollo/client'
 import { RefreshCw } from 'lucide-react'
-import { PageHeader, DataTable, Button, Card, CardContent, PageActionButton } from 'components/common'
+import { PageHeader, DataTable, Button, Card, CardContent, PageActionButton, TABLE_KEYS } from 'components/common'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { formatDate, ALERT_LEVEL } from 'lib/utils'
 
@@ -27,7 +27,6 @@ export default function Alerts() {
     <div>
       <PageHeader
         title="智能预警"
-        titleTip="效期红绿灯 · 库存水位线 · FIFO 优先"
         action={
           <Tooltip>
             <TooltipTrigger asChild>
@@ -68,7 +67,7 @@ export default function Alerts() {
         })}
       </div>
 
-      <DataTable loading={loading} columns={[
+      <DataTable tableKey={TABLE_KEYS.ALERTS} loading={loading} columns={[
         { key: 'level', title: '级别', tip: '效期红绿灯：绿安全 / 黄临期 / 红预警', render: (r) => {
           const lv = ALERT_LEVEL[String(r.level)] ?? { label: String(r.level), color: 'bg-muted' }
           return <span className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${lv.color}`} />{lv.label}</span>

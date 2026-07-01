@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import { Plus } from 'lucide-react'
-import { DataTable, RowActions, Badge, Button } from 'components/common'
+import { DataTable, RowActions, Badge, Button, TABLE_KEYS } from 'components/common'
 import { ListToolbar } from 'components/section-menu'
 import { useAuth } from 'lib/auth'
 import { GET_ROLES, DELETE_ROLE } from '../queries'
@@ -37,6 +37,7 @@ export default function RolesIndex() {
       />
 
       <DataTable
+        tableKey={TABLE_KEYS.ADMIN_ROLES}
         loading={loading}
         columns={[
           { key: 'code', title: '编码' },

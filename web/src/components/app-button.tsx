@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react'
+import { forwardRef } from 'react'
 import { Button, type ButtonProps } from 'components/ui/button'
 import { cn } from 'lib/utils'
 
@@ -43,10 +44,20 @@ export function PageCreateButton({
   )
 }
 
-export function ToolbarButton({ className, children, ...props }: ButtonProps) {
+export const ToolbarButton = forwardRef<HTMLButtonElement, ButtonProps>(function ToolbarButton(
+  { className, children, ...props },
+  ref,
+) {
   return (
-    <Button variant="ghost" size="sm" className={cn(toolbarButtonClass, 'border', className)} {...props}>
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="sm"
+      className={cn(toolbarButtonClass, 'border', className)}
+      {...props}
+    >
       {children}
     </Button>
   )
-}
+})
+ToolbarButton.displayName = 'ToolbarButton'

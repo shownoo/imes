@@ -1,7 +1,13 @@
 import { useCallback, useRef, useState } from 'react'
 import { FileImage, FileText, Loader2 } from 'lucide-react'
-import { Button, ToolbarButton } from 'components/common'
+import { ToolbarButton } from 'components/common'
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { cn } from 'lib/utils'
+
+const IMPORT_TIPS = {
+  pdf: '上传电子版 PDF，自动提取文字并识别物资与数量',
+  image: '上传清单图片（PNG / JPG / WebP），OCR 识别后匹配物资档案',
+} as const
 
 export type ImportResult = {
   matched: number
@@ -37,7 +43,11 @@ export function InboundImportActions({
   onImportPdf,
   onImportImage,
   onDismissError,
-}: InboundImportActionsProps) {
+  layout = 'block',
+}: InboundImportActionsProps & {
+  /** block：独立一行；inline：与添加行同排 */
+  layout?: 'block' | 'inline'
+}) {
   const [dragOver, setDragOver] = useState(false)
   const dragDepth = useRef(0)
 
@@ -86,19 +96,35 @@ export function InboundImportActions({
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
       className={cn(
-        'flex flex-wrap items-center gap-3 rounded-lg transition-colors',
-        dragOver && 'bg-primary/[0.04] ring-1 ring-primary/20 ring-inset',
+        'flex flex-wrap items-center gap-2',
+        layout === 'block' && 'gap-3 rounded-lg',
+        layout === 'inline' && 'min-w-0 flex-1',
+        dragOver && 'rounded-lg bg-primary/[0.04] ring-1 ring-primary/20 ring-inset',
       )}
     >
-      <div className="flex items-center gap-0.5">
-        <ToolbarButton disabled={isParsing} onClick={() => pickFile('.pdf,application/pdf', onImportPdf)}>
-          <FileText className="size-3.5" />
-          PDF
-        </ToolbarButton>
-        <ToolbarButton disabled={isParsing} onClick={() => pickFile('.png,.jpg,.jpeg,.webp,image/*', onImportImage)}>
-          <FileImage className="size-3.5" />
-          图片
-        </ToolbarButton>
+      <div className="flex shrink-0 items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToolbarButton disabled={isParsing} onClick={() => pickFile('.pdf,application/pdf', onImportPdf)}>
+              <FileText className="size-3.5" />
+              PDF
+            </ToolbarButton>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[14rem] leading-relaxed">
+            {IMPORT_TIPS.pdf}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToolbarButton disabled={isParsing} onClick={() => pickFile('.png,.jpg,.jpeg,.webp,image/*', onImportImage)}>
+              <FileImage className="size-3.5" />
+              图片
+            </ToolbarButton>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[14rem] leading-relaxed">
+            {IMPORT_TIPS.image}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {statusText && (

@@ -1,17 +1,16 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { useWorkspace } from 'contexts/workspace-context'
-import { VIEW_PERSPECTIVES } from 'lib/workspace-theme'
 import { AppearanceCatalogSection } from 'pages/workspace/appearance-catalog'
 import { LayoutSection } from 'pages/workspace/layout-section'
-import { PageHeader, Button, Card, CardContent, CardHeader, CardTitle, Badge } from 'components/common'
+import { PageHeader, Button, Card, CardContent, CardHeader, CardTitle } from 'components/common'
+import { WorkspaceWidgetPanel } from 'components/workspace-widget-panel'
+import { useLeaderVi } from 'hooks/use-leader-vi'
 
 export default function WorkspaceSettings() {
-  const {
-    prefs,
-    toggleWidget, moveWidget, applyPerspective, resetAll, theme,
-  } = useWorkspace()
+  const { resetAll } = useWorkspace()
+  const { isLight } = useLeaderVi()
 
   useEffect(() => {
     const hash = window.location.hash.slice(1)
@@ -42,58 +41,19 @@ export default function WorkspaceSettings() {
       <AppearanceCatalogSection />
 
       <section id="widgets">
-        <Card className="leader-panel-card">
-          <CardHeader>
+        <Card className="leader-panel-card overflow-hidden">
+          <CardHeader className="pb-2">
             <CardTitle>工作台模块</CardTitle>
-            <p className="text-sm text-muted-foreground">控制首页卡片显示与排列顺序</p>
+            <p className="text-sm text-muted-foreground">
+              控制首页各卡片的显示与排列；统计图可单独开关，「待我审批」与「进行中单据」亦可独立配置
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-2">
-              {prefs.widgets.map((w, i) => (
-                <li key={w.id} className="flex items-center justify-between rounded-lg border border-[var(--leader-card-border)] bg-[var(--leader-card-bg)] px-4 py-3">
-                  <label className="flex flex-1 cursor-pointer items-center gap-3">
-                    <input type="checkbox" checked={w.visible} onChange={() => toggleWidget(w.id)} />
-                    <span className="text-sm font-medium">{w.label}</span>
-                    {!w.visible && <Badge variant="secondary">已隐藏</Badge>}
-                  </label>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="size-8" disabled={i === 0} onClick={() => moveWidget(w.id, -1)}>
-                      <ChevronUp className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="size-8" disabled={i === prefs.widgets.length - 1} onClick={() => moveWidget(w.id, 1)}>
-                      <ChevronDown className="size-4" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section>
-        <Card className="leader-panel-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" />
-              角色视角一键应用
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">按岗位快速切换工作台模块组合与内容区布局</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {VIEW_PERSPECTIVES.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => applyPerspective(p.id)}
-                  className="rounded-xl border border-[var(--leader-card-border)] bg-[var(--leader-card-bg)] p-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
-                >
-                  <p className="font-medium">{p.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{p.desc}</p>
-                </button>
-              ))}
-            </div>
+          <CardContent className="p-0 pt-1">
+            <WorkspaceWidgetPanel
+              theme={isLight ? 'light' : 'dark'}
+              showHeader={false}
+              showSettingsLink={false}
+            />
           </CardContent>
         </Card>
       </section>

@@ -14,16 +14,18 @@ export type SectionNavItem = {
   icon?: ElementType
 }
 
-const navShellClass = 'w-full rounded-xl border border-border/60 bg-muted/45 p-1'
-const navListClass = 'flex w-full gap-1'
-const navItemWrapClass = 'flex min-w-0 flex-1'
+/** Apple HIG / M3 分段控件：内容宽度、紧凑高度；轨道略深以衬托选中白底 */
+const navShellClass =
+  'inline-flex max-w-full rounded-lg bg-muted p-0.5 dark:bg-muted/50'
+const navListClass = 'inline-flex flex-wrap items-center gap-0.5'
+const navItemWrapClass = 'shrink-0'
 
 function navItemClass(active: boolean) {
   return cn(
-    'flex w-full min-w-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] transition-all duration-150',
+    'inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[12.5px] transition-all duration-150',
     active
-      ? 'bg-background font-semibold text-foreground shadow-sm ring-1 ring-border/70'
-      : 'text-muted-foreground hover:bg-background/55 hover:text-foreground/90',
+      ? 'bg-background font-semibold text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.08),0_0_0_0.5px_rgba(0,0,0,0.04)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(255,255,255,0.08)]'
+      : 'font-medium text-muted-foreground/75 hover:bg-background/40 hover:text-foreground/70',
   )
 }
 
@@ -31,7 +33,7 @@ type SectionMenuProps = {
   items: SectionMenuItem[]
   value: string
   onChange: (value: string) => void
-  /** 左搜右建工具栏（推荐） */
+  /** 左搜右建工具栏（Tab 下方独立第二行） */
   toolbar?: { search?: ReactNode; action?: ReactNode }
   /** @deprecated 使用 toolbar */
   trailing?: ReactNode
@@ -40,7 +42,7 @@ type SectionMenuProps = {
 
 export function SectionMenu({ items, value, onChange, toolbar, trailing, className }: SectionMenuProps) {
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn(toolbar || trailing ? 'space-y-3' : undefined, className)}>
       <nav className={navShellClass}>
         <div className={navListClass}>
           {items.map(({ value: itemValue, label, icon: Icon }) => {
@@ -53,7 +55,7 @@ export function SectionMenu({ items, value, onChange, toolbar, trailing, classNa
               >
                 {Icon && (
                   <Icon
-                    className={cn('size-3.5 shrink-0', active ? 'text-primary opacity-100' : 'opacity-70')}
+                    className={cn('size-3 shrink-0', active ? 'text-foreground' : 'text-muted-foreground/60')}
                     strokeWidth={active ? 2.25 : 2}
                   />
                 )}
@@ -88,7 +90,7 @@ export function SectionNav({ items, className }: { items: SectionNavItem[]; clas
               <>
                 {Icon && (
                   <Icon
-                    className={cn('size-3.5 shrink-0', isActive ? 'text-primary opacity-100' : 'opacity-70')}
+                    className={cn('size-3 shrink-0', isActive ? 'text-foreground' : 'text-muted-foreground/60')}
                     strokeWidth={isActive ? 2.25 : 2}
                   />
                 )}
@@ -115,18 +117,40 @@ export function SectionPanelHeader({ desc, action }: { desc?: string; action?: R
 export function ListToolbar({
   search,
   action,
+  leading,
   className,
+  searchWrapClassName,
 }: {
   search?: ReactNode
   action?: ReactNode
+  /** 左侧筛选/分段控件，与 search、action 同一行 */
+  leading?: ReactNode
   className?: string
+  searchWrapClassName?: string
 }) {
-  if (!search && !action) return null
+  if (!search && !action && !leading) return null
+  const inline = !!leading
   return (
-    <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center', className)}>
-      {search ? <div className="w-full sm:max-w-xs lg:max-w-sm">{search}</div> : null}
+    <div
+      className={cn(
+        inline ? 'flex flex-wrap items-center gap-2 sm:gap-3' : 'flex flex-col gap-3 sm:flex-row sm:items-center',
+        className,
+      )}
+    >
+      {leading ? <div className="shrink-0">{leading}</div> : null}
+      {search ? (
+        <div
+          className={cn(
+            'w-full',
+            inline ? 'min-w-[8rem] flex-1 sm:max-w-none' : 'sm:max-w-xs lg:max-w-sm',
+            searchWrapClassName,
+          )}
+        >
+          {search}
+        </div>
+      ) : null}
       {action ? (
-        <div className={cn('flex shrink-0', search ? 'sm:ml-auto' : 'ml-auto')}>{action}</div>
+        <div className={cn('flex shrink-0', search || inline ? 'ml-auto' : 'ml-auto')}>{action}</div>
       ) : null}
     </div>
   )

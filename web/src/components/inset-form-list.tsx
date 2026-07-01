@@ -36,7 +36,12 @@ export function InsetFormSection({
 
 export function InsetFormGroup({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('inset-form-group overflow-hidden rounded-[10px] border border-border/40', className)}>
+    <div
+      className={cn(
+        'inset-form-group overflow-hidden rounded-xl border border-border/35 bg-card',
+        className,
+      )}
+    >
       {children}
     </div>
   )
@@ -78,9 +83,9 @@ export function InsetFormRow({
         className,
       )}
     >
-      <div className="flex w-[6.75rem] shrink-0 items-center gap-0.5 sm:w-[7.25rem]">
-        <span className="text-[15px] text-foreground">{label}</span>
-        {required && <span className="text-destructive">*</span>}
+      <div className="flex min-w-0 max-w-[38%] shrink-0 items-center gap-0.5 sm:max-w-[9.5rem]">
+        <span className="truncate text-[15px] text-foreground">{label}</span>
+        {required && <span className="shrink-0 text-destructive/85">*</span>}
         {tip && <InfoTip side="right">{tip}</InfoTip>}
       </div>
       <div className="min-w-0 flex-1">{children}</div>

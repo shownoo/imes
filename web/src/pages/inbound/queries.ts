@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 
-export const GET_INBOUND = gql`query GetInboundOrders($type: String, $status: String, $warehouseId: ID, $input: PaginationInput) { getInboundOrders(type: $type, status: $status, warehouseId: $warehouseId, input: $input) }`
+export const GET_INBOUND = gql`query GetInboundOrders($type: String, $status: String, $warehouseId: ID, $orderNo: String, $supplierId: ID, $dateFrom: DateTime, $dateTo: DateTime, $input: PaginationInput) { getInboundOrders(type: $type, status: $status, warehouseId: $warehouseId, orderNo: $orderNo, supplierId: $supplierId, dateFrom: $dateFrom, dateTo: $dateTo, input: $input) }`
 export const GET_WAREHOUSES = gql`query GetWarehouses { getWarehouses }`
 export const GET_ORDER = gql`query GetInboundOrder($input: IdInput!) { getInboundOrder(input: $input) }`
 export const GET_SUPPLIERS = gql`query GetSuppliers($input: PaginationInput) { getSuppliers(input: $input) }`
@@ -15,4 +15,4 @@ export const COMPLETE = gql`mutation CompleteInboundOrder($input: IdInput!) { co
 export const GET_APPROVAL = gql`query GetApprovalInstance($bizType: String!, $bizId: String!) { getApprovalInstance(bizType: $bizType, bizId: $bizId) }`
 export const PARSE_INBOUND_TEXT = gql`mutation ParseInboundDocumentText($text: String!) { parseInboundDocumentText(text: $text) }`
 
-export interface InboundLineRow { materialId: string; expectedQty: number }
+export interface InboundLineRow { materialId: string; expectedQty: number; manufacturer?: string }

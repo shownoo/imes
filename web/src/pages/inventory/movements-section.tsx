@@ -1,13 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { gql, useQuery } from '@apollo/client'
-import { useNavigate } from 'react-router-dom'
 import { Search } from 'lucide-react'
-import { DataTable } from 'components/common'
-import { MovementTypeBadge } from 'components/movement-type-badge'
+import { LeaderSurfaceCard } from 'components/leader-surface-card'
+import { DataTablePagination } from 'components/data-table/data-table-pagination'
+import { FilterBarRow } from 'components/segment-filter-bar'
 import { MovementFilterBar } from 'components/movement-filter-bar'
 import { DebounceInput } from 'components/debounce-input'
-import { MOVEMENT_TYPE_FILTERS, formatQtyChange } from 'lib/movement-types'
-import { formatDateTime } from 'lib/utils'
+import { SearchInputShell } from 'components/section-menu'
+import { MOVEMENT_TYPE_FILTERS } from 'lib/movement-types'
+import { listFilterInputClass } from 'lib/list-index-chrome'
+import { cn } from 'lib/utils'
+import { MovementsTable } from './movements-table'
 
 const GET_MOVEMENTS = gql`
   query GetMovements($type: String, $input: PaginationInput) {
@@ -15,26 +18,30 @@ const GET_MOVEMENTS = gql`
   }
 `
 
-const REF_TYPE_LABELS: Record<string, string> = {
-  InboundOrder: '采购入库',
-  OutboundOrder: '出库单',
-}
-
 export function MovementsSection() {
-  const navigate = useNavigate()
   const [typeFilter, setTypeFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
-  const { data, loading } = useQuery(GET_MOVEMENTS, {
+  const { data, loading, refetch } = useQuery(GET_MOVEMENTS, {
     variables: {
       type: typeFilter === 'all' ? undefined : typeFilter,
-      input: { take: 100, search: search || undefined },
+      input: {
+        take: pageSize,
+        skip: (page - 1) * pageSize,
+        search: search || undefined,
+      },
     },
   })
 
   const payload = data?.getMovements as { movements: Array<Record<string, unknown>>; count: number } | undefined
   const movements = payload?.movements ?? []
   const total = payload?.count ?? 0
+
+  useEffect(() => {
+    setPage(1)
+  }, [typeFilter, search])
 
   const typeCounts = useMemo(() => {
     if (typeFilter !== 'all') return undefined
@@ -47,124 +54,43 @@ export function MovementsSection() {
   }, [movements, total, typeFilter])
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:max-w-xs lg:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-          <DebounceInput
-            key="movements-search"
-            className="pl-9"
-            placeholder="搜索物资、二维码、操作人、备注..."
-            defaultValue={search}
-            debounceTime={500}
-            onSearch={setSearch}
-          />
-        </div>
-        <p className="text-sm text-muted-foreground sm:ml-auto">
-          全链路库存变动 · 共 <span className="font-medium tabular-nums text-foreground">{total}</span> 条
-          {movements.length < total && ` · 当前显示 ${movements.length} 条`}
-        </p>
-      </div>
+    <div className="space-y-3">
+      <SearchInputShell>
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+        <DebounceInput
+          key="movements-search"
+          className={cn(listFilterInputClass, 'pl-9')}
+          placeholder="搜索物资、二维码、操作人、备注..."
+          defaultValue={search}
+          debounceTime={500}
+          onSearch={setSearch}
+        />
+      </SearchInputShell>
 
-      <div className="mb-4">
+      <FilterBarRow>
         <MovementFilterBar
           value={typeFilter}
           options={MOVEMENT_TYPE_FILTERS}
           onChange={setTypeFilter}
           counts={typeCounts}
         />
-      </div>
+      </FilterBarRow>
 
-      <DataTable
-        loading={loading}
-        columns={[
-          {
-            key: 'createdAt',
-            title: '时间',
-            tip: '库存变动发生时间',
-            render: (r) => (
-              <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-                {formatDateTime(String(r.createdAt))}
-              </span>
-            ),
-          },
-          {
-            key: 'type',
-            title: '类型',
-            tip: '入库、出库、拆零、移库等变动类型',
-            render: (r) => <MovementTypeBadge type={String(r.type)} />,
-          },
-          {
-            key: 'material',
-            title: '物资',
-            tip: '变动涉及的物资',
-            render: (r) => {
-              const material = (r.stockItem as { material?: { name?: string; code?: string } })?.material
-              return (
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{material?.name ?? '—'}</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{material?.code}</p>
-                </div>
-              )
-            },
-          },
-          {
-            key: 'qrCode',
-            title: '二维码',
-            tip: '点击跳转扫码追溯页',
-            render: (r) => {
-              const qr = String((r.stockItem as { qrCode?: string })?.qrCode ?? '')
-              return (
-                <button
-                  type="button"
-                  className="max-w-[8rem] truncate font-mono text-[11px] text-primary hover:underline"
-                  title={qr}
-                  onClick={() => navigate(`/trace?qr=${encodeURIComponent(qr)}`)}
-                >
-                  {qr || '—'}
-                </button>
-              )
-            },
-          },
-          {
-            key: 'quantity',
-            title: '数量变化',
-            tip: '变动前后数量对比',
-            render: (r) => (
-              <span className="tabular-nums text-sm">
-                {formatQtyChange(r.beforeQty, r.afterQty, r.quantity)}
-              </span>
-            ),
-          },
-          {
-            key: 'operator',
-            title: '操作人',
-            tip: '执行该操作的用户',
-            render: (r) => String((r.operator as { name?: string })?.name ?? '—'),
-          },
-          {
-            key: 'ref',
-            title: '关联',
-            tip: '关联的入库单或出库单',
-            render: (r) => {
-              const refType = r.refType ? REF_TYPE_LABELS[String(r.refType)] ?? String(r.refType) : null
-              if (!refType) return <span className="text-muted-foreground">—</span>
-              return <span className="text-xs text-muted-foreground">{refType}</span>
-            },
-          },
-          {
-            key: 'note',
-            title: '备注',
-            tip: '操作补充说明',
-            render: (r) => (
-              <span className="line-clamp-2 max-w-[14rem] text-xs text-muted-foreground" title={String(r.note ?? '')}>
-                {String(r.note ?? '—')}
-              </span>
-            ),
-          },
-        ]}
-        rows={movements}
-      />
+      <LeaderSurfaceCard flat contentClassName="overflow-hidden p-0">
+        <MovementsTable rows={movements} loading={loading} />
+        <DataTablePagination
+          current={page}
+          pageSize={pageSize}
+          total={total}
+          disabled={loading}
+          onChange={(nextPage) => setPage(nextPage)}
+          onShowSizeChange={(_, size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
+          handleRefresh={() => void refetch()}
+        />
+      </LeaderSurfaceCard>
     </div>
   )
 }

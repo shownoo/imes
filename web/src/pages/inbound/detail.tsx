@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
-import { DocumentPage } from 'components/form-page'
-import { Button, Card, CardContent } from 'components/common'
+import {
+  DocumentPage,
+  GroupedFormSection,
+  GroupedFormRow,
+  GroupedFormItem,
+  GroupedFormStack,
+  GroupedFormReadonlyField,
+  DocumentLinesSection,
+} from 'components/form-page'
+import { Button } from 'components/common'
 import { StatusBadge } from 'components/status-badge'
 import { QrLabelDialog } from 'components/qr-label-dialog'
 import type { QrLabelData } from 'components/qr-label'
 import { stockItemToLabel } from 'components/qr-label'
-import { ReceiveCodingPanel, type ReceiveCodingForm } from 'components/receive-coding-panel'
+import { ReceiveCodingPanel, type ReceiveCodingForm, type ReceivedBatchRow } from 'components/receive-coding-panel'
 import { ApprovalFlowViewer } from 'components/approval/flow-viewer'
 import type { FlowGraph, NodeProgressState } from 'lib/approval-flow'
 import { canActOnAssignee } from 'lib/approval-flow'
@@ -17,6 +25,25 @@ import { ReceiveLinesTable, linePending } from './receive-lines-table'
 import { ReceiveSummaryPanel } from './receive-summary'
 import { PrintButton } from 'components/print-button'
 import { LEGAL_PRINT_TEMPLATE } from 'lib/print-keys'
+import { MessageAlert } from 'components/message-alert'
+import { formatDate } from 'lib/utils'
+
+type PageMessage = {
+  title: string
+  description?: React.ReactNode
+  tone?: 'warning' | 'info'
+}
+
+function lineReceivedBatches(line: Record<string, unknown>): ReceivedBatchRow[] {
+  const items = (line.stockItems as Array<Record<string, unknown>>) ?? []
+  return items.map((item) => ({
+    batchNo: (item.batch as { batchNo?: string })?.batchNo ?? '—',
+    qty: Number(item.quantity ?? 0),
+    productionDate: (item.batch as { productionDate?: string })?.productionDate
+      ? String((item.batch as { productionDate?: string }).productionDate)
+      : undefined,
+  }))
+}
 
 export default function InboundDetail() {
   const { id } = useParams()
@@ -48,6 +75,7 @@ export default function InboundDetail() {
   )
   const orderLines = (order?.lines as Array<Record<string, unknown>>) ?? []
   const receiveLine = receiveLineId ? orderLines.find((l) => String(l.id) === receiveLineId) : null
+  const warehouseName = (order?.warehouse as { name?: string })?.name
 
   const [receiveForm, setReceiveForm] = useState<ReceiveCodingForm>({
     actualQty: 0,
@@ -56,6 +84,7 @@ export default function InboundDetail() {
   })
   const [labelOpen, setLabelOpen] = useState(false)
   const [labelData, setLabelData] = useState<QrLabelData | null>(null)
+  const [pageMessage, setPageMessage] = useState<PageMessage | null>(null)
 
   const openReceive = (line: Record<string, unknown>) => {
     const pending = linePending(line)
@@ -74,15 +103,23 @@ export default function InboundDetail() {
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [receiveLineId])
 
+  const showMessage = (msg: PageMessage) => setPageMessage(msg)
+
   const handleReceive = async () => {
     if (!receiveLine || !id) return
     const pending = linePending(receiveLine)
     if (receiveForm.actualQty <= 0 || receiveForm.actualQty > pending) {
-      alert(`实收数量须在 1～${pending} 之间`)
+      showMessage({
+        title: '数量不正确',
+        description: `实收数量须在 1～${pending.toLocaleString()} 之间。`,
+      })
       return
     }
     if (!receiveForm.batchNo.trim()) {
-      alert('请填写生产批次号')
+      showMessage({
+        title: '请填写批次号',
+        description: '请录入外包装批次号，与送货单或标签保持一致。',
+      })
       return
     }
     try {
@@ -107,14 +144,67 @@ export default function InboundDetail() {
           qrCode: payload.qrCode,
           title: material?.name ?? '应急物资',
           subtitle: `批次 ${receiveForm.batchNo.trim()}`,
-          meta: [`数量 ${receiveForm.actualQty}${material?.unit ?? ''}`, '采购入库'],
+          meta: [`本批 ${receiveForm.actualQty}${material?.unit ?? ''}`, '采购入库'],
         })
         setLabelOpen(true)
       }
-      closeReceive()
+      const { data: fresh } = await refetch()
+      const freshOrder = fresh?.getInboundOrder as { lines?: Array<Record<string, unknown>> } | undefined
+      const freshLine = freshOrder?.lines?.find((l) => String(l.id) === String(receiveLine.id))
+      const stillPending = freshLine ? linePending(freshLine) : 0
+      if (stillPending > 0) {
+        setReceiveForm({
+          actualQty: stillPending,
+          batchNo: '',
+          productionDate: new Date().toISOString().slice(0, 10),
+        })
+      } else {
+        closeReceive()
+      }
+    } catch (e) {
+      showMessage({
+        title: '收货失败',
+        description: e instanceof Error ? e.message : '操作失败，请稍后重试',
+      })
+    }
+  }
+
+  const handleComplete = async () => {
+    if (!id) return
+    const incomplete = orderLines.filter((line) => linePending(line) > 0)
+    if (incomplete.length > 0) {
+      showMessage({
+        title: '无法完成入库',
+        description: (
+          <>
+            <p className="mb-2.5">以下明细尚未收齐，请先完成收货赋码：</p>
+            <ul className="divide-y divide-border/35 overflow-hidden rounded-lg border border-border/50 bg-muted/25">
+              {incomplete.map((line) => {
+                const material = line.material as { name?: string; unit?: string }
+                const pending = linePending(line)
+                return (
+                  <li key={String(line.id)} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
+                    <span className="truncate font-medium text-foreground">{material?.name ?? '—'}</span>
+                    <span className="shrink-0 tabular-nums text-amber-600">
+                      待收 {pending.toLocaleString()}{material?.unit ? ` ${material.unit}` : ''}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        ),
+      })
+      return
+    }
+    try {
+      await completeOrder({ variables: { input: { id } } })
       refetch()
     } catch (e) {
-      alert(e instanceof Error ? e.message : '收货失败')
+      showMessage({
+        title: '无法完成入库',
+        description: e instanceof Error ? e.message : '操作失败，请稍后重试',
+      })
     }
   }
 
@@ -136,12 +226,16 @@ export default function InboundDetail() {
   } | undefined
 
   const showReceiveSummary = order.status === 'RECEIVING' || order.status === 'COMPLETED'
+  const isReceiving = order.status === 'RECEIVING'
+  const linesTip = isReceiving && warehouseName
+    ? `上架时请扫描「${warehouseName}」下的货位码`
+    : undefined
 
   return (
     <DocumentPage
       title={String(order.orderNo ?? '')}
       backTo="/inbound"
-      backLabel='采购入库'
+      backLabel="采购入库"
       wide
       footer={
         <>
@@ -149,85 +243,125 @@ export default function InboundDetail() {
             <PrintButton templateKey={LEGAL_PRINT_TEMPLATE.PrintInbound} documentId={id} />
           )}
           {order.status === 'DRAFT' && (
-            <Button onClick={async () => { await submitOrder({ variables: { input: { id } } }); refetch() }}>提交审核</Button>
+            <Button size="sm" onClick={async () => { await submitOrder({ variables: { input: { id } } }); refetch() }}>提交审核</Button>
           )}
           {order.status === 'PENDING' && myPendingTask && (
             <>
-              <Button variant="destructive" onClick={async () => { await rejectOrder({ variables: { input: { id }, reason: '不符合采购要求' } }); refetch() }}>驳回</Button>
-              <Button onClick={async () => { await approveOrder({ variables: { input: { id } } }); refetch() }}>审核通过</Button>
+              <Button size="sm" variant="destructive" onClick={async () => { await rejectOrder({ variables: { input: { id }, reason: '不符合采购要求' } }); refetch() }}>驳回</Button>
+              <Button size="sm" onClick={async () => { await approveOrder({ variables: { input: { id } } }); refetch() }}>审核通过</Button>
             </>
           )}
-          {order.status === 'RECEIVING' && (
-            <Button onClick={async () => { try { await completeOrder({ variables: { input: { id } } }); refetch() } catch (e) { alert(e instanceof Error ? e.message : '无法完成') } }}>完成入库</Button>
+          {isReceiving && (
+            <Button size="sm" onClick={() => void handleComplete()}>完成入库</Button>
           )}
         </>
       }
     >
-      <Card className="leader-panel-card mb-4">
-        <CardContent className="grid grid-cols-2 gap-4 pt-6 text-sm sm:grid-cols-4">
-          <div><span className="text-muted-foreground">状态</span><p className="mt-1.5"><StatusBadge status={String(order.status)} /></p></div>
-          <div><span className="text-muted-foreground">收货仓库</span><p className="mt-1">{(order.warehouse as { name?: string })?.name ?? '—'}</p></div>
-          <div><span className="text-muted-foreground">供应商</span><p className="mt-1">{(order.supplier as { name?: string })?.name ?? '—'}</p></div>
-          <div><span className="text-muted-foreground">合同号</span><p className="mt-1">{String(order.contractNo ?? '—')}</p></div>
+      <GroupedFormStack>
+        <GroupedFormSection title="采购信息">
+          <GroupedFormRow>
+            <GroupedFormItem label="供应商">
+              <GroupedFormReadonlyField>
+                {(order.supplier as { name?: string })?.name ?? '—'}
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+            <GroupedFormItem label="采购合同号">
+              <GroupedFormReadonlyField>{String(order.contractNo ?? '—')}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="联系人">
+              <GroupedFormReadonlyField>{String(order.contact ?? '—')}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+            <GroupedFormItem label="电话">
+              <GroupedFormReadonlyField>{String(order.phone ?? '—')}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="入库日期">
+              <GroupedFormReadonlyField>
+                {formatDate(String(order.orderDate ?? order.createdAt))}
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+            <GroupedFormItem label="计划收货日期">
+              <GroupedFormReadonlyField>
+                {order.plannedReceiveDate ? formatDate(String(order.plannedReceiveDate)) : '—'}
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label="收货仓库">
+              <GroupedFormReadonlyField>{warehouseName ?? '—'}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+            <GroupedFormItem label="状态">
+              <GroupedFormReadonlyField className="border-0 bg-transparent px-1 shadow-none">
+                <StatusBadge status={String(order.status)} />
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
           {showReceiveSummary && (
-            <ReceiveSummaryPanel
-              lines={orderLines}
-              receiving={order.status === 'RECEIVING'}
-            />
+            <ReceiveSummaryPanel lines={orderLines} receiving={isReceiving} embedded compact />
           )}
-        </CardContent>
-      </Card>
+        </GroupedFormSection>
 
-      {approval?.flow?.graph && order.status !== 'DRAFT' && (
-        <Card className="leader-panel-card mb-4">
-          <CardContent className="pt-6">
-            <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
-            {approval.tasks && approval.tasks.some((t) => t.status !== 'PENDING') && (
-              <div className="mt-4 space-y-2 border-t pt-4">
-                <p className="text-xs font-medium text-muted-foreground">审批记录</p>
-                {approval.tasks.filter((t) => t.status !== 'PENDING').map((t) => (
-                  <div key={t.id} className="flex justify-between text-xs">
-                    <span>{t.nodeLabel} · {t.status === 'APPROVED' ? '通过' : '驳回'}</span>
-                    <span className="text-muted-foreground">{t.actedBy?.name ?? '—'}{t.comment ? ` · ${t.comment}` : ''}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        {approval?.flow?.graph && order.status !== 'DRAFT' && (
+          <GroupedFormSection title="审批流程">
+            <GroupedFormItem>
+              <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
+            </GroupedFormItem>
+          </GroupedFormSection>
+        )}
 
-      <ReceiveLinesTable
-        lines={orderLines}
-        receiving={order.status === 'RECEIVING'}
-        orderCompleted={order.status === 'COMPLETED'}
-        activeLineId={receiveLineId}
-        warehouseName={(order.warehouse as { name?: string })?.name}
-        onReceive={openReceive}
-        onReprint={handleReprint}
-      />
-
-      {receiveLine && (
-        <div ref={panelRef} className="mt-4">
-          <ReceiveCodingPanel
-            materialName={receiveMaterial?.name ?? '—'}
-            unit={receiveMaterial?.unit}
-            pendingQty={linePending(receiveLine)}
-            shelfLifeMonths={receiveMaterial?.category?.shelfLifeMonths}
-            value={receiveForm}
-            onChange={setReceiveForm}
-            onCancel={closeReceive}
-            onSubmit={handleReceive}
-            submitting={receiving}
+        <DocumentLinesSection
+          title="入库清单"
+          caption={linesTip}
+          trailing={orderLines.length > 0 ? (
+            <span className="text-xs tabular-nums text-muted-foreground">{orderLines.length} 行</span>
+          ) : undefined}
+        >
+          <ReceiveLinesTable
+            lines={orderLines}
+            receiving={isReceiving}
+            orderCompleted={order.status === 'COMPLETED'}
+            activeLineId={receiveLineId}
+            onReceive={openReceive}
+            onReprint={handleReprint}
           />
-        </div>
-      )}
+        </DocumentLinesSection>
+
+        {receiveLine && (
+          <div ref={panelRef}>
+            <ReceiveCodingPanel
+              materialName={receiveMaterial?.name ?? '—'}
+              unit={receiveMaterial?.unit}
+              expectedQty={Number(receiveLine.expectedQty)}
+              receivedQty={Number(receiveLine.actualQty ?? 0)}
+              receivedBatches={lineReceivedBatches(receiveLine)}
+              pendingQty={linePending(receiveLine)}
+              shelfLifeMonths={receiveMaterial?.category?.shelfLifeMonths}
+              value={receiveForm}
+              onChange={setReceiveForm}
+              onCancel={closeReceive}
+              onSubmit={handleReceive}
+              submitting={receiving}
+            />
+          </div>
+        )}
+      </GroupedFormStack>
 
       <QrLabelDialog
         open={labelOpen}
         onOpenChange={setLabelOpen}
         label={labelData}
-        description='收货赋码成功，请打印标签贴于物资外包装'
+        description="收货赋码成功，请打印标签贴于物资外包装"
+      />
+
+      <MessageAlert
+        open={!!pageMessage}
+        onOpenChange={(open) => { if (!open) setPageMessage(null) }}
+        title={pageMessage?.title ?? ''}
+        description={pageMessage?.description}
+        tone={pageMessage?.tone}
       />
     </DocumentPage>
   )

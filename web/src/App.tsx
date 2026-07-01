@@ -7,7 +7,13 @@ import MaterialsIndex from './pages/materials/index'
 import MaterialForm from './pages/materials/material-form'
 import CategoryForm from './pages/materials/category-form'
 import SupplierForm from './pages/materials/supplier-form'
-import WarehousesIndex from './pages/warehouses/index'
+import OutboundPurposeForm from './pages/materials/purpose-form'
+import OutboundDestinationForm from './pages/materials/destination-form'
+import WarehousesIndex, {
+  WarehousesLegacyRedirect,
+  WarehouseEditLegacyRedirect,
+  ShelfEditLegacyRedirect,
+} from './pages/warehouses/index'
 import WarehouseForm from './pages/warehouses/warehouse-form'
 import ShelfForm from './pages/warehouses/shelf-form'
 import InboundIndex from './pages/inbound/index'
@@ -52,13 +58,21 @@ export default function App() {
           <Route path="category/:id/edit" element={<CategoryForm />} />
           <Route path="supplier/create" element={<SupplierForm />} />
           <Route path="supplier/:id/edit" element={<SupplierForm />} />
-        </Route>
-        <Route path="warehouses">
-          <Route index element={<WarehousesIndex />} />
+          <Route path="purpose/create" element={<OutboundPurposeForm />} />
+          <Route path="purpose/:id/edit" element={<OutboundPurposeForm />} />
+          <Route path="destination/create" element={<OutboundDestinationForm />} />
+          <Route path="destination/:id/edit" element={<OutboundDestinationForm />} />
           <Route path="warehouse/create" element={<WarehouseForm />} />
           <Route path="warehouse/:id/edit" element={<WarehouseForm />} />
           <Route path="shelf/create" element={<ShelfForm />} />
           <Route path="shelf/:id/edit" element={<ShelfForm />} />
+        </Route>
+        <Route path="warehouses">
+          <Route index element={<WarehousesIndex />} />
+          <Route path="warehouse/create" element={<WarehousesLegacyRedirect to="/materials/warehouse/create" />} />
+          <Route path="warehouse/:id/edit" element={<WarehouseEditLegacyRedirect />} />
+          <Route path="shelf/create" element={<WarehousesLegacyRedirect to="/materials/shelf/create" />} />
+          <Route path="shelf/:id/edit" element={<ShelfEditLegacyRedirect />} />
         </Route>
         <Route path="inbound">
           <Route index element={<InboundIndex />} />

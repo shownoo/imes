@@ -1,0 +1,78 @@
+/* 对齐 dbm TableForm.css */
+.table-form {
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.table-form--wide {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.table-form--wide .table-form__col-index {
+  width: 2.75rem;
+}
+
+.table-form--wide .table-form__col-material {
+  width: 28%;
+}
+
+.table-form--wide .table-form__col-spec {
+  width: 14%;
+}
+
+.table-form--wide .table-form__col-manufacturer {
+  width: 14%;
+}
+
+.table-form--wide .table-form__col-unit {
+  width: 6%;
+}
+
+.table-form--wide .table-form__col-category {
+  width: 18%;
+}
+
+.table-form--wide .table-form__col-qty {
+  width: 6.5rem;
+}
+
+.table-form td {
+  box-sizing: border-box;
+  padding: 4px;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+
+.table-form tr:not(:first-child) td {
+  height: auto;
+  min-height: 36px;
+}
+
+.table-form tr:first-child td.table-form__header {
+  height: 26px;
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  background-color: hsl(var(--muted) / 0.45);
+  border: 1px solid hsl(var(--border) / 0.55);
+}
+
+.table-form td.table-form__cell {
+  overflow: hidden;
+  border: 1px solid hsl(var(--border) / 0.45);
+  background: hsl(var(--card));
+}
+
+.table-form td.table-form__index {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  max-width: 2.75rem;
+  text-align: center;
+}

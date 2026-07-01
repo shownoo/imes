@@ -58,25 +58,29 @@ export function LineReceiveOutcome({ line, receiving }: { line: InboundLine; rec
 
   if (actual <= 0) {
     if (receiving && pending > 0) {
-      return <span className="text-xs text-muted-foreground">待收 {pending}</span>
+      return (
+        <span className="inline-flex rounded-full bg-orange-500/12 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-orange-600">
+          待收 {pending.toLocaleString()}
+        </span>
+      )
     }
-    return <span className="text-muted-foreground">—</span>
+    return <span className="text-[15px] text-muted-foreground/35">—</span>
   }
 
   const diff = actual - expected
   if (diff === 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
-        <CheckCircle2 className="size-3.5 shrink-0" />
-        足额
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/12 px-2.5 py-0.5 text-[11px] font-medium text-green-700">
+        <CheckCircle2 className="size-3 shrink-0" />
+        收齐
       </span>
     )
   }
 
-  const label = diff < 0 ? `少收 ${Math.abs(diff)}` : `超收 ${diff}`
+  const label = diff < 0 ? `少收 ${Math.abs(diff).toLocaleString()}` : `超收 ${diff.toLocaleString()}`
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
-      <AlertTriangle className="size-3.5 shrink-0" />
+    <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/12 px-2.5 py-0.5 text-[11px] font-medium text-orange-600">
+      <AlertTriangle className="size-3 shrink-0" />
       {label}
     </span>
   )
@@ -85,9 +89,15 @@ export function LineReceiveOutcome({ line, receiving }: { line: InboundLine; rec
 export function ReceiveSummaryPanel({
   lines,
   receiving,
+  embedded,
+  compact,
 }: {
   lines: InboundLine[]
   receiving?: boolean
+  /** 嵌在元信息卡片底部 — 无独立圆角边框 */
+  embedded?: boolean
+  /** 单行紧凑布局 */
+  compact?: boolean
 }) {
   const summary = summarizeInboundReceive(lines)
   if (summary.totalExpected <= 0) return null
@@ -97,7 +107,7 @@ export function ReceiveSummaryPanel({
   const showLineDetail = lineCount > 1
 
   const statusLabel = receiveFull
-    ? '足额入库'
+    ? '收齐入库'
     : receiving && summary.pending > 0
       ? '收货中'
       : receiveDiff < 0
@@ -111,17 +121,20 @@ export function ReceiveSummaryPanel({
   return (
     <div
       className={cn(
-        'col-span-2 space-y-2.5 rounded-lg px-4 py-3 sm:col-span-4',
-        statusTone === 'emerald' && 'bg-emerald-500/[0.06]',
-        statusTone === 'amber' && 'bg-amber-500/[0.06]',
-        statusTone === 'muted' && 'bg-muted/50',
+        compact ? 'space-y-1.5 px-4 py-3' : 'space-y-2.5 px-4 py-3.5 sm:px-5',
+        !embedded && 'rounded-xl border',
+        embedded && !compact && 'border-t border-border/40 px-3.5 py-3',
+        embedded && compact && 'border-t border-border/40',
+        !embedded && statusTone === 'emerald' && 'border-emerald-500/15 bg-emerald-500/[0.06]',
+        !embedded && statusTone === 'amber' && 'border-amber-500/15 bg-amber-500/[0.06]',
+        !embedded && statusTone === 'muted' && 'border-border/40 bg-muted/35',
       )}
     >
-      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span>收货进度</span>
-        <span className="tabular-nums">{progress}%</span>
+      <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
+        <span className="font-medium">收货进度</span>
+        <span className="font-number tabular-nums">{progress}%</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+      <div className={cn('overflow-hidden rounded-full bg-foreground/[0.06]', compact ? 'h-1' : 'h-1.5')}>
         <div
           className={cn(
             'h-full rounded-full transition-all',
@@ -130,21 +143,25 @@ export function ReceiveSummaryPanel({
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <div className={cn(
+        'flex flex-wrap items-center gap-x-2.5 gap-y-0.5',
+        compact ? 'text-[11px]' : 'text-sm',
+      )}
+      >
         <span>
-          实收 <span className="font-medium tabular-nums text-foreground">{summary.totalActual}</span>
-          <span className="text-muted-foreground"> / 预计 {summary.totalExpected}</span>
+          实收 <span className="font-number font-semibold tabular-nums text-foreground">{summary.totalActual.toLocaleString()}</span>
+          <span className="text-muted-foreground"> / 预计 {summary.totalExpected.toLocaleString()}</span>
         </span>
-        <span className="text-muted-foreground/40 select-none" aria-hidden>·</span>
+        <span className="text-muted-foreground/35 select-none" aria-hidden>·</span>
         <span className={cn(
-          'inline-flex items-center gap-1.5 font-medium',
+          'inline-flex items-center gap-1 font-medium',
           receiveFull ? 'text-emerald-600' : receiveDiff !== 0 ? 'text-amber-600' : 'text-foreground/80',
         )}
         >
           {receiveFull
-            ? <CheckCircle2 className="size-4 shrink-0" />
+            ? <CheckCircle2 className={cn('shrink-0', compact ? 'size-3' : 'size-4')} />
             : receiveDiff !== 0
-              ? <AlertTriangle className="size-4 shrink-0" />
+              ? <AlertTriangle className={cn('shrink-0', compact ? 'size-3' : 'size-4')} />
               : null}
           {statusLabel}
         </span>
@@ -158,7 +175,7 @@ export function ReceiveSummaryPanel({
           <>
             <span className="text-muted-foreground/40 select-none" aria-hidden>·</span>
             <span className="text-muted-foreground">
-              {fullLines}/{lineCount} 行足额
+              {fullLines}/{lineCount} 行收齐
               {shortLines > 0 && ` · ${shortLines} 行少收`}
               {overLines > 0 && ` · ${overLines} 行超收`}
               {unreceivedLines > 0 && ` · ${unreceivedLines} 行未收`}

@@ -1,10 +1,30 @@
 import { builder } from '../builder.js'
 import { getOutboundOrderForPrint } from '../lib/print-data.js'
-import { genOrderNo, genQrCode, calcExpiryLevel } from '../lib/utils.js'
+import { containsI, genOrderNo, genQrCode, calcExpiryLevel } from '../lib/utils.js'
 import { formatStatus } from '../lib/log-diff.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { startApprovalInstance, findPendingTaskForBiz, completeApprovalTask } from '../lib/approval.js'
 import { IdInput, PaginationInput } from './input-types.js'
+
+async function resolveOutboundPurposeName(
+  prisma: { outboundPurpose: { findUnique: (args: { where: { id: string } }) => Promise<{ name: string; enabled: boolean } | null> } },
+  purposeId?: string | null,
+) {
+  if (!purposeId) return undefined
+  const purpose = await prisma.outboundPurpose.findUnique({ where: { id: purposeId } })
+  if (!purpose?.enabled) throw new Error('请选择有效的出库用途')
+  return purpose.name
+}
+
+async function resolveOutboundDestinationName(
+  prisma: { outboundDestination: { findUnique: (args: { where: { id: string } }) => Promise<{ name: string; enabled: boolean } | null> } },
+  destinationId?: string | null,
+) {
+  if (!destinationId) return undefined
+  const destination = await prisma.outboundDestination.findUnique({ where: { id: destinationId } })
+  if (!destination?.enabled) throw new Error('请选择有效的出库目的地')
+  return destination.name
+}
 
 function snapOutboundOrder(order: {
   purpose?: string | null
@@ -34,8 +54,8 @@ const OutboundLineInput = builder.inputType('OutboundLineInput', {
 
 const CreateOutboundInput = builder.inputType('CreateOutboundInput', {
   fields: (t) => ({
-    purpose: t.string({ required: false }),
-    destination: t.string({ required: false }),
+    purposeId: t.id({ required: false }),
+    destinationId: t.id({ required: false }),
     recipient: t.string({ required: false }),
     lines: t.field({ type: [OutboundLineInput], required: true }),
   }),
@@ -44,8 +64,8 @@ const CreateOutboundInput = builder.inputType('CreateOutboundInput', {
 const UpdateOutboundInput = builder.inputType('UpdateOutboundInput', {
   fields: (t) => ({
     id: t.id({ required: true }),
-    purpose: t.string({ required: false }),
-    destination: t.string({ required: false }),
+    purposeId: t.id({ required: false }),
+    destinationId: t.id({ required: false }),
     recipient: t.string({ required: false }),
     lines: t.field({ type: [OutboundLineInput], required: false }),
   }),
@@ -65,10 +85,24 @@ builder.queryField('getOutboundOrders', (t) =>
     authScopes: { authenticated: true },
     args: {
       status: t.arg.string({ required: false }),
+      orderNo: t.arg.string({ required: false }),
+      dateFrom: t.arg({ type: 'DateTime', required: false }),
+      dateTo: t.arg({ type: 'DateTime', required: false }),
       input: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: async (_, { status, input }, ctx) => {
-      const where = status ? { status: status as never } : {}
+    resolve: async (_, { status, orderNo, dateFrom, dateTo, input }, ctx) => {
+      const where: Record<string, unknown> = {}
+      if (status) where.status = status
+      if (orderNo) where.orderNo = containsI(orderNo)
+      if (dateFrom || dateTo) {
+        where.createdAt = {}
+        if (dateFrom) (where.createdAt as { gte?: Date }).gte = dateFrom
+        if (dateTo) {
+          const end = new Date(dateTo)
+          end.setHours(23, 59, 59, 999)
+          ;(where.createdAt as { lte?: Date }).lte = end
+        }
+      }
       const [orders, count] = await Promise.all([
         ctx.prisma.outboundOrder.findMany({
           where,
@@ -170,12 +204,14 @@ builder.mutationField('createOutboundOrder', (t) =>
     authScopes: { authenticated: true },
     args: { input: t.arg({ type: CreateOutboundInput, required: true }) },
     resolve: async (_, { input }, ctx) => {
+      const purpose = await resolveOutboundPurposeName(ctx.prisma, input.purposeId)
+      const destination = await resolveOutboundDestinationName(ctx.prisma, input.destinationId)
       const result = await ctx.prisma.outboundOrder.create({
         data: {
           orderNo: genOrderNo('OUT'),
           status: 'DRAFT',
-          purpose: input.purpose,
-          destination: input.destination,
+          purpose,
+          destination,
           recipient: input.recipient,
           createdById: ctx.identity!.userId,
           lines: {
@@ -212,7 +248,13 @@ builder.mutationField('updateOutboundOrder', (t) =>
       if (order.status !== 'DRAFT') throw new Error('仅草稿状态可编辑')
 
       const beforeSnap = snapOutboundOrder(order)
-      const { id, lines, ...data } = input
+      const { id, lines, purposeId, destinationId, ...data } = input
+      const purpose = purposeId !== undefined
+        ? await resolveOutboundPurposeName(ctx.prisma, purposeId)
+        : undefined
+      const destination = destinationId !== undefined
+        ? await resolveOutboundDestinationName(ctx.prisma, destinationId)
+        : undefined
       if (lines) {
         await ctx.prisma.outboundOrderLine.deleteMany({ where: { orderId: id } })
         await ctx.prisma.outboundOrderLine.createMany({
@@ -225,7 +267,11 @@ builder.mutationField('updateOutboundOrder', (t) =>
       }
       const result = await ctx.prisma.outboundOrder.update({
         where: { id },
-        data: data as never,
+        data: {
+          ...data,
+          ...(purposeId !== undefined ? { purpose } : {}),
+          ...(destinationId !== undefined ? { destination } : {}),
+        } as never,
         include: { lines: { include: { material: true } } },
       })
       await writeSystemLog(ctx, {

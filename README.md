@@ -50,8 +50,10 @@ cp api/.env.example api/.env
 # 生成 Prisma Client
 pnpm prisma:g
 
-# 推送 schema 并填充演示数据
-cd api && npx prisma db push && pnpm db:seed
+# 推送 schema 并填充数据
+cd api && npx prisma db push && pnpm db:seed          # 全部（必须 + 演示）
+# cd api && pnpm db:seed:required                     # 仅必须数据（生产/空库）
+# cd api && pnpm db:seed:demo                         # 仅演示数据（需先 required）
 ```
 
 ### 启动

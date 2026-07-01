@@ -14,6 +14,30 @@ export function GridTableFrame({ className, children }: { className?: string; ch
   )
 }
 
+/** Apple 风列表外框 — 白卡 + 轻阴影 + 大圆角（macOS / iOS grouped table） */
+export const appleTableFrameClass =
+  'overflow-hidden rounded-xl border border-border/30 bg-card shadow-[0_1px_4px_hsl(0_0%_0%/0.05),0_0_0_0.5px_hsl(0_0%_0%/0.03)]'
+
+export function AppleTableFrame({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cn(appleTableFrameClass, 'overflow-x-auto [-webkit-overflow-scrolling:touch]', className)}>
+      {children}
+    </div>
+  )
+}
+
+/** Apple 风表头 — secondary 底 + caption 字阶 */
+export const appleTableHeadClass =
+  'h-9 whitespace-nowrap bg-secondary/50 px-3 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/75 first:pl-5 last:pr-5'
+
+/** Apple 风单元格 */
+export const appleTableCellClass =
+  'whitespace-nowrap px-3 py-2.5 align-middle first:pl-5 last:pr-5'
+
+/** Apple 风行 — 发丝分隔 + hover tint */
+export const appleTableRowClass =
+  'border-b border-border/20 bg-card transition-colors duration-150 last:border-b-0 hover:bg-foreground/[0.025]'
+
 /** 数据列表表 — 无竖线、行分隔、宽松内边距（Apple Settings / Reminders 列表风格） */
 export const imesDataTableClass = 'imes-data-table w-full border-collapse text-sm'
 

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Pencil } from 'lucide-react'
-import { DataTable } from 'components/common'
+import { DataTable, TABLE_KEYS } from 'components/common'
 import { SectionPanelHeader } from 'components/section-menu'
 import { ActionLink } from 'components/action-link'
 import { LEGAL_PRINT_TEMPLATE, PRINT_TEMPLATE_LABELS, type PrintTemplateKey } from 'lib/print-keys'
@@ -17,6 +17,7 @@ export default function PrintTemplatesPage() {
     <div>
       <SectionPanelHeader desc="配置入库单、出库单的默认打印样式；点击编辑进入可视化模板设计器" />
       <DataTable
+        tableKey={TABLE_KEYS.ADMIN_PRINT_TEMPLATES}
         columns={[
           { key: 'name', title: '模板名称' },
           {

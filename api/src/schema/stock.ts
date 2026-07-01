@@ -13,23 +13,25 @@ builder.queryField('getStockItems', (t) =>
       input: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: async (_, { status, materialId, warehouseId, input }, ctx) => {
-      const where: Record<string, unknown> = {}
-      if (status) where.status = status
-      if (materialId) where.materialId = materialId
+      const scopeWhere: Record<string, unknown> = {}
+      if (materialId) scopeWhere.materialId = materialId
       if (warehouseId) {
-        where.OR = [
+        scopeWhere.OR = [
           { shelf: { warehouseId } },
           { shelfId: null, batch: { inboundOrder: { warehouseId } } },
         ]
       }
       if (input?.search) {
-        where.OR = [
+        scopeWhere.OR = [
           { qrCode: containsI(input.search) },
           { material: { name: containsI(input.search) } },
         ]
       }
 
-      const [items, count] = await Promise.all([
+      const where = { ...scopeWhere }
+      if (status) where.status = status
+
+      const [items, count, scopeCount, qtyAgg, shelvedCount, statRows] = await Promise.all([
         ctx.prisma.stockItem.findMany({
           where,
           take: input?.take ?? 50,
@@ -42,14 +44,50 @@ builder.queryField('getStockItems', (t) =>
           orderBy: { updatedAt: 'desc' },
         }),
         ctx.prisma.stockItem.count({ where }),
+        ctx.prisma.stockItem.count({ where: scopeWhere }),
+        ctx.prisma.stockItem.aggregate({ where: scopeWhere, _sum: { quantity: true } }),
+        ctx.prisma.stockItem.count({ where: { ...scopeWhere, shelfId: { not: null } } }),
+        ctx.prisma.stockItem.findMany({
+          where: scopeWhere,
+          select: {
+            materialId: true,
+            status: true,
+            batch: { select: { expiryDate: true } },
+          },
+        }),
       ])
+
+      const materialKinds = new Set(statRows.map((row) => row.materialId)).size
+      const expiry = { green: 0, yellow: 0, red: 0 }
+      const statusCounts = { IN_STOCK: 0, IN_TRANSIT: 0, ISSUED: 0, SCRAPPED: 0 }
+      for (const row of statRows) {
+        const level = calcExpiryLevel(row.batch.expiryDate)
+        if (level === 'RED') expiry.red += 1
+        else if (level === 'YELLOW') expiry.yellow += 1
+        else expiry.green += 1
+        const s = row.status as keyof typeof statusCounts
+        if (s in statusCounts) statusCounts[s] += 1
+      }
 
       const enriched = items.map((item) => ({
         ...item,
         expiryLevel: calcExpiryLevel(item.batch.expiryDate),
       }))
 
-      return { items: enriched, count }
+      return {
+        items: enriched,
+        count,
+        stats: {
+          totalUnits: scopeCount,
+          totalQty: qtyAgg._sum.quantity ?? 0,
+          shelved: shelvedCount,
+          unshelved: scopeCount - shelvedCount,
+          materialKinds,
+          expiryAlert: expiry.red + expiry.yellow,
+          expiry,
+          status: statusCounts,
+        },
+      }
     },
   }),
 )
