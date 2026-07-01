@@ -6,6 +6,7 @@ import { Input } from 'components/ui/input'
 import { LogDetailDialog, hasLogDetail } from 'components/log-detail-dialog'
 import { formatDateTime } from 'lib/utils'
 import { LOG_ACTION_LABELS, LOG_MODULE_LABELS } from 'lib/system-log-labels'
+import { useTranslation } from 'react-i18next'
 
 const GET_LOGS = gql`
   query GetSystemLogs($module: String, $action: String, $input: PaginationInput) {
@@ -21,6 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export default function SystemLogs() {
+  const { t } = useTranslation()
   const [module, setModule] = useState('')
   const [action, setAction] = useState('')
   const [search, setSearch] = useState('')
@@ -55,33 +57,33 @@ export default function SystemLogs() {
       <Card className="mb-6">
         <CardContent className="flex flex-wrap items-end gap-3 pt-6">
           <div className="min-w-[8rem]">
-            <label className="mb-1 block text-xs text-muted-foreground">模块</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t('模块')}</label>
             <select
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={module}
               onChange={(e) => setModule(e.target.value)}
             >
-              <option value="">全部模块</option>
+              <option value="">{t('全部模块')}</option>
               {Object.entries(LOG_MODULE_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
           </div>
           <div className="min-w-[8rem]">
-            <label className="mb-1 block text-xs text-muted-foreground">操作</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t('操作')}</label>
             <select
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={action}
               onChange={(e) => setAction(e.target.value)}
             >
-              <option value="">全部操作</option>
+              <option value="">{t('全部操作')}</option>
               {Object.entries(LOG_ACTION_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
           </div>
           <div className="relative min-w-[12rem] flex-1">
-            <label className="mb-1 block text-xs text-muted-foreground">关键词</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t('关键词')}</label>
             <Search className="absolute bottom-2.5 left-3 size-4 text-muted-foreground" />
             <Input
               className="pl-9"
@@ -120,14 +122,14 @@ export default function SystemLogs() {
         columns={[
           {
             key: 'createdAt',
-            title: '时间',
+            title: t('时间'),
             render: (r) => (
               <span className="whitespace-nowrap text-xs">{formatDateTime(String(r.createdAt))}</span>
             ),
           },
           {
             key: 'user',
-            title: '操作人',
+            title: t('操作人'),
             render: (r) => {
               const user = r.user as {
                 name?: string
@@ -149,22 +151,22 @@ export default function SystemLogs() {
           },
           {
             key: 'module',
-            title: '模块',
+            title: t('模块'),
             render: (r) => (
               <Badge variant="outline">{LOG_MODULE_LABELS[String(r.module)] ?? String(r.module)}</Badge>
             ),
           },
           {
             key: 'action',
-            title: '操作',
+            title: t('操作'),
             render: (r) => (
               <Badge variant="info">{LOG_ACTION_LABELS[String(r.action)] ?? String(r.action)}</Badge>
             ),
           },
-          { key: 'summary', title: '摘要' },
+          { key: 'summary', title: t('摘要') },
           {
             key: 'targetLabel',
-            title: '对象',
+            title: t('对象'),
             render: (r) => (
               <span className="font-mono text-xs text-muted-foreground">
                 {String(r.targetLabel ?? '—')}
@@ -173,11 +175,10 @@ export default function SystemLogs() {
           },
           {
             key: 'detail',
-            title: '详情',
+            title: t('详情'),
             render: (r) => (
               hasLogDetail(r) ? (
-                <Button variant="ghost" size="sm" className="h-7 text-gold" onClick={() => setDetailLog(r)}>
-                  查看变更</Button>
+                <Button variant="ghost" size="sm" className="h-7 text-gold" onClick={() => setDetailLog(r)}>查看变更</Button>
               ) : (
                 <span className="text-xs text-muted-foreground">—</span>
               )

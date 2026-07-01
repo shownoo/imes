@@ -90,12 +90,18 @@ export const ORDER_STATUS: Record<string, StatusConfig> = {
   DRAFT: cfg('草稿', 'neutral'),
   PENDING: cfg('待审核', 'amber'),
   RECEIVING: cfg('收货中', 'blue'),
+  /** 展示态：RECEIVING 且全部收齐，库表仍为 RECEIVING */
+  INBOUND_READY_TO_COMPLETE: cfg('待入库', 'amber'),
   APPROVED: cfg('已审核', 'cyan'),
   PICKING: cfg('拣货中', 'indigo'),
+  /** 展示态：PICKING 且全部拣齐，库表仍为 PICKING */
+  OUTBOUND_READY_TO_SHIP: cfg('待出库', 'amber'),
   SHIPPED: cfg('已出库', 'teal'),
   COMPLETED: cfg('已完成', 'green'),
   CANCELLED: cfg('已取消', 'red'),
   REJECTED: cfg('已驳回', 'red'),
+  /** 仓管作业：已审核 + 拣货中 */
+  active: cfg('待作业', 'cyan'),
   IN_STOCK: cfg('在库', 'green'),
   IN_TRANSIT: cfg('在途', 'blue'),
   ISSUED: cfg('已发出', 'teal'),
@@ -109,11 +115,12 @@ export function getStatusConfig(status: string): StatusConfig {
 
 /** 出库流程步骤 */
 export const OUTBOUND_PROCESS_STEPS = [
-  { label: '新建申请', tip: '填写用途、目的地与物资明细，保存草稿后可提交审核' },
+  { label: '新建申请', tip: '填写用途、领用人与物资明细，保存草稿后可提交审核' },
   { label: '主管审核', tip: '提交后进入审批流，审核通过后方可开始拣货' },
   { label: 'FIFO拣货', tip: '按效期优先推荐拣货路径，扫码逐件确认出库数量' },
   { label: '拆零赋码', tip: '整包出库时可拆分剩余库存，并生成新的二维码标签' },
-  { label: '确认出库', tip: '全部拣货完成后确认出库，库存自动扣减' },
+  { label: '确认出库', tip: '全部拣齐后确认出库，库存正式扣减，单据变为已出库' },
+  { label: '结案归档', tip: '发运复核无误后完成出库，单据归档结案' },
 ] as const
 
 /** 出库单筛选顺序（工作流） */
@@ -145,3 +152,17 @@ export const INBOUND_PROCESS_STEPS = [
   { label: '蓝牙批量赋码', tip: '连接蓝牙打印机，批量生成并粘贴物资二维码' },
   { label: '扫码上架绑定', tip: '扫描货位码完成上架，建立物资与货位关联' },
 ] as const
+
+export function getOutboundProcessSteps() {
+  return OUTBOUND_PROCESS_STEPS.map((s) => ({
+    label: translate(s.label),
+    tip: translate(s.tip),
+  }))
+}
+
+export function getInboundProcessSteps() {
+  return INBOUND_PROCESS_STEPS.map((s) => ({
+    label: translate(s.label),
+    tip: translate(s.tip),
+  }))
+}

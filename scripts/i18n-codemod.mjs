@@ -14,9 +14,43 @@ const skipFiles = new Set([
   'print-variables.ts',
   'index.tsx', // locales
 ])
-const skipDirs = new Set(['Editor', 'locales', 'node_modules'])
+const skipDirs = new Set(['Editor', 'locales', 'node_modules', 'generated'])
 
-const ATTRS = ['label', 'title', 'placeholder', 'description', 'alt', 'aria-label', 'backLabel']
+const ATTRS = [
+  'label',
+  'title',
+  'placeholder',
+  'description',
+  'alt',
+  'aria-label',
+  'backLabel',
+  'emptyText',
+  'confirmText',
+  'cancelText',
+  'tip',
+  'message',
+  'header',
+  'subheader',
+  'helperText',
+]
+
+const OBJ_KEYS = [
+  'label',
+  'title',
+  'placeholder',
+  'description',
+  'tip',
+  'message',
+  'emptyText',
+  'confirmText',
+  'cancelText',
+  'header',
+  'subheader',
+  'helperText',
+  'backLabel',
+  'shortLabel',
+  'name',
+]
 
 function hasChinese(s) {
   return /[\u4e00-\u9fff]/.test(s)
@@ -34,6 +68,15 @@ function walk(dir, files = []) {
   return files
 }
 
+function escapeForT(s) {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+function alreadyWrapped(src, pos) {
+  const before = src.slice(Math.max(0, pos - 12), pos)
+  return before.includes('t(') || before.includes('translate(')
+}
+
 function transform(file) {
   let src = fs.readFileSync(file, 'utf8')
   if (!hasChinese(src)) return false
@@ -45,46 +88,73 @@ function transform(file) {
     const re = new RegExp(`${attr}="([^"]*[\u4e00-\u9fff][^"]*)"`, 'g')
     src = src.replace(re, (_, val) => {
       changed = true
-      return `${attr}={t('${val.replace(/'/g, "\\'")}')}`
+      return `${attr}={t('${escapeForT(val)}')}`
     })
   }
+
+  // key: '中文' or key: "中文" in object literals
+  for (const key of OBJ_KEYS) {
+    const reSingle = new RegExp(`(${key}:\\s*)'([^'\\\\]*(?:\\\\.[^'\\\\]*)*)'`, 'g')
+    src = src.replace(reSingle, (match, prefix, val, offset) => {
+      if (!hasChinese(val)) return match
+      if (alreadyWrapped(src, offset)) return match
+      changed = true
+      return `${prefix}t('${escapeForT(val)}')`
+    })
+    const reDouble = new RegExp(`(${key}:\\s*)"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`, 'g')
+    src = src.replace(reDouble, (match, prefix, val, offset) => {
+      if (!hasChinese(val)) return match
+      if (alreadyWrapped(src, offset)) return match
+      changed = true
+      return `${prefix}t('${escapeForT(val)}')`
+    })
+  }
+
+  // confirm('中文') / alert('中文')
+  src = src.replace(/(confirm|alert|window\.confirm|window\.alert)\('([^']*[\u4e00-\u9fff][^']*)'\)/g, (_, fn, val) => {
+    changed = true
+    return `${fn}(t('${escapeForT(val)}'))`
+  })
 
   // >中文</ -> >{t('中文')}<
   src = src.replace(/>([^<{][^<]*[\u4e00-\u9fff][^<]*)</g, (match, text) => {
     const trimmed = text.trim()
     if (!trimmed || trimmed.includes('{') || trimmed.includes('t(')) return match
-  // skip if contains other markup
     if (trimmed.includes('<')) return match
     changed = true
-    return `>{t('${trimmed.replace(/'/g, "\\'")}')}<`
+    return `>{t('${escapeForT(trimmed)}')}<`
   })
 
   if (!changed) return false
 
   if (!src.includes('useTranslation')) {
-    src = src.replace(
-      /^(import .+\n)+/,
-      (m) => `${m}import { useTranslation } from 'react-i18next'\n`,
-    )
+    const importMatch = src.match(/^(import .+\n)+/)
+    if (importMatch) {
+      src = src.replace(importMatch[0], `${importMatch[0]}import { useTranslation } from 'react-i18next'\n`)
+    } else {
+      src = `import { useTranslation } from 'react-i18next'\n${src}`
+    }
   }
 
   // inject const { t } = useTranslation() in exported function components
-  src = src.replace(
-    /export (?:default )?function (\w+)\([^)]*\)\s*\{/g,
-    (m, name) => {
-      if (src.includes('const { t } = useTranslation()')) return m
-      return `${m}\n  const { t } = useTranslation()`
-    },
-  )
-
-  // also for const X = () => {
-  src = src.replace(
-    /export const (\w+) = \(\) => \{/g,
-    (m) => {
-      if (src.includes('const { t } = useTranslation()')) return m
-      return `${m}\n  const { t } = useTranslation()`
-    },
-  )
+  if (!src.includes('const { t } = useTranslation()')) {
+    src = src.replace(
+      /export (?:default )?function (\w+)\([^)]*\)\s*\{/g,
+      (m) => `${m}\n  const { t } = useTranslation()`,
+    )
+    src = src.replace(
+      /export const (\w+) = \(\) => \{/g,
+      (m) => `${m}\n  const { t } = useTranslation()`,
+    )
+    // function ComponentName() { at module level
+    src = src.replace(
+      /^function (\w+)\([^)]*\)\s*\{/gm,
+      (m, name) => {
+        if (['useTranslation'].includes(name)) return m
+        return `${m}\n  const { t } = useTranslation()`
+      },
+    )
+  }
 
   fs.writeFileSync(file, src)
   return true

@@ -12,7 +12,7 @@ import { cn } from 'lib/utils'
 
 type OutboundLine = Record<string, unknown>
 
-const emptyCell = <span className="text-[15px] text-muted-foreground/35">—</span>
+const emptyCell = <span className="text-sm text-muted-foreground/40">—</span>
 
 export function PickLinesTable({
   lines,
@@ -32,22 +32,20 @@ export function PickLinesTable({
       <table className={imesDataTableClass}>
         <thead>
           <tr className="border-b border-border/25">
-            <th className={cn(appleTableHeadClass, 'text-left')}>物资</th>
-            <th className={appleTableHeadClass}>编码</th>
-            <th className={appleTableHeadClass}>规格</th>
-            <th className={cn(appleTableHeadClass, 'w-12')}>单位</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>申请</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>已拣</th>
-            <th className={appleTableHeadClass}>差异</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>操作</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'物资'}</th>
+            <th className={appleTableHeadClass}>{'编码'}</th>
+            <th className={appleTableHeadClass}>{'规格'}</th>
+            <th className={cn(appleTableHeadClass, 'w-12')}>{'单位'}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{'申请'}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{'已拣'}</th>
+            <th className={appleTableHeadClass}>{'差异'}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{'操作'}</th>
           </tr>
         </thead>
         <tbody>
           {lines.length === 0 ? (
             <tr>
-              <td colSpan={8} className="px-5 py-14 text-center text-[15px] text-muted-foreground">
-                暂无明细
-              </td>
+              <td colSpan={8} className="px-5 py-14 text-center text-sm text-muted-foreground">{'暂无明细'}</td>
             </tr>
           ) : (
             lines.map((line) => {
@@ -80,30 +78,30 @@ export function PickLinesTable({
                       active ? 'border-l-primary' : 'border-l-transparent',
                     )}
                   >
-                    <span className="text-[15px] font-medium leading-snug text-foreground">
+                    <span className="text-sm font-medium leading-snug text-foreground">
                       {material?.name ?? '—'}
                     </span>
                   </td>
                   <td className={appleTableCellClass}>
                     {material?.code
-                      ? <TableCodeCell className="text-[13px] font-normal text-muted-foreground">{material.code}</TableCodeCell>
+                      ? <TableCodeCell>{material.code}</TableCodeCell>
                       : emptyCell}
                   </td>
-                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-[13px] text-muted-foreground')}>
+                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-muted-foreground')}>
                     {material?.spec ?? emptyCell}
                   </td>
-                  <td className={cn(appleTableCellClass, 'text-[13px] text-muted-foreground')}>
+                  <td className={cn(appleTableCellClass, 'text-center text-muted-foreground')}>
                     {material?.unit ?? emptyCell}
                   </td>
                   <td className={cn(appleTableCellClass, 'text-right')}>
-                    <span className="font-number text-[15px] font-semibold tabular-nums tracking-tight text-foreground">
+                    <span className="font-number text-sm font-semibold tabular-nums tracking-tight text-foreground">
                       {requestedQty.toLocaleString()}
                     </span>
                   </td>
                   <td className={cn(appleTableCellClass, 'text-right')}>
                     <span
                       className={cn(
-                        'font-number text-[15px] tabular-nums tracking-tight',
+                        'font-number text-sm tabular-nums tracking-tight',
                         fullyPicked
                           ? 'font-semibold text-emerald-600'
                           : pickedQty > 0
@@ -120,7 +118,8 @@ export function PickLinesTable({
                   <td className={cn(appleTableCellClass, 'text-right')}>
                     {canPick ? (
                       <ActionLink
-                        className={cn('text-[15px] font-normal', active && 'font-semibold')}
+                        variant="pill"
+                        className={cn(active && 'bg-primary/[0.14] font-semibold')}
                         onClick={() => onPick(line)}
                       >
                         {active ? '拣货中…' : pickedQty > 0 ? '继续拣货' : 'FIFO 拣货'}

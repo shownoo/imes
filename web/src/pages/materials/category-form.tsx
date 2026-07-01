@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'c
 import { GET_CATEGORIES, ADD_CATEGORY, ZONE_OPTIONS } from './queries'
 
 export default function CategoryForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -72,7 +74,7 @@ export default function CategoryForm() {
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="大类信息">
+        <GroupedFormSection title={t('大类信息')}>
           <GroupedFormRow>
             <GroupedFormItem label='大类编码' required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />

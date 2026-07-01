@@ -172,7 +172,7 @@ export function PageBreadcrumb({
   className?: string
 }) {
   return (
-    <nav className={cn('flex min-w-0 items-center gap-1 text-sm', className)} aria-label="页面导航">
+    <nav className={cn('flex min-w-0 items-center gap-1 text-sm', className)} aria-label={'页面导航'}>
       <h1 className="sr-only">{parentLabel} / {currentLabel}</h1>
       <Button
         type="button"

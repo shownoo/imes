@@ -20,4 +20,5 @@ model StockItem {
 
   movements     StockMovement[]
   outboundLines OutboundOrderLine[]
+  stocktakeLines StocktakeLine[]
 }

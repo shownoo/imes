@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
+import { format } from 'date-fns'
 import {
   FormPage,
   GroupedFormSection,
   GroupedFormRow,
   GroupedFormItem,
   GroupedFormStack,
+  GroupedFormRemark,
   groupedFormInputClass,
   groupedFormSelectTriggerClass,
+  InlineDatePicker,
+  localDateToIso,
+  todayDateStr,
 } from 'components/form-page'
 import { Input } from 'components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
@@ -20,6 +26,7 @@ import type { ImportResult } from '../inbound/inbound-import-panel'
 const emptyLine = (): OutboundLineRow => ({ materialId: '', requestedQty: 1 })
 
 function matchPurposeId(purposes: Array<Record<string, unknown>>, purposeText?: string | null) {
+  const { t } = useTranslation()
   if (!purposeText) return ''
   const exact = purposes.find((p) => String(p.name) === purposeText)
   if (exact) return String(exact.id)
@@ -28,6 +35,7 @@ function matchPurposeId(purposes: Array<Record<string, unknown>>, purposeText?: 
 }
 
 function matchDestinationId(destinations: Array<Record<string, unknown>>, destinationText?: string | null) {
+  const { t } = useTranslation()
   if (!destinationText) return ''
   const exact = destinations.find((d) => String(d.name) === destinationText)
   if (exact) return String(exact.id)
@@ -36,10 +44,11 @@ function matchDestinationId(destinations: Array<Record<string, unknown>>, destin
 }
 
 export default function OutboundForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
-  const [form, setForm] = useState(emptyOutboundForm())
+  const [form, setForm] = useState(() => ({ ...emptyOutboundForm(), orderDate: todayDateStr() }))
   const [formError, setFormError] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
@@ -76,7 +85,17 @@ export default function OutboundForm() {
       setForm({
         purposeId: matchPurposeId(purposes, String(order.purpose ?? '')),
         destinationId: matchDestinationId(destinations, String(order.destination ?? '')),
-        recipient: String(order.recipient ?? ''),
+        contact: String(order.contact ?? ''),
+        phone: String(order.phone ?? ''),
+        orderDate: order.orderDate
+          ? format(new Date(String(order.orderDate)), 'yyyy-MM-dd')
+          : order.createdAt
+            ? format(new Date(String(order.createdAt)), 'yyyy-MM-dd')
+            : todayDateStr(),
+        plannedShipDate: order.plannedShipDate
+          ? format(new Date(String(order.plannedShipDate)), 'yyyy-MM-dd')
+          : '',
+        remark: String(order.remark ?? ''),
         lines: rowLines.length
           ? rowLines.map((l) => ({ materialId: String(l.materialId), requestedQty: Number(l.requestedQty) }))
           : [emptyLine()],
@@ -111,6 +130,16 @@ export default function OutboundForm() {
     return () => window.clearTimeout(timer)
   }, [importResult, documentImport.parseError])
 
+  const handleDestinationChange = (destinationId: string) => {
+    const dest = destinations.find((d) => String(d.id) === destinationId)
+    setForm({
+      ...form,
+      destinationId,
+      contact: dest ? String(dest.contact ?? '') : '',
+      phone: dest ? String(dest.phone ?? '') : '',
+    })
+  }
+
   const handleSave = async () => {
     setFormError(null)
     if (!form.purposeId) {
@@ -121,10 +150,15 @@ export default function OutboundForm() {
       setFormError('请添加出库明细，或上传清单识别')
       return
     }
+    const optionalText = (v: string) => v || (isEdit ? null : undefined)
     const payload = {
       purposeId: form.purposeId,
       destinationId: form.destinationId || undefined,
-      recipient: form.recipient || undefined,
+      contact: form.contact || undefined,
+      phone: form.phone || undefined,
+      orderDate: form.orderDate ? localDateToIso(form.orderDate) : undefined,
+      plannedShipDate: form.plannedShipDate ? localDateToIso(form.plannedShipDate) : undefined,
+      remark: optionalText(form.remark),
       lines: form.lines.filter((l) => l.materialId),
     }
     try {
@@ -146,8 +180,9 @@ export default function OutboundForm() {
   return (
     <FormPage
       mode={isEdit ? 'edit' : 'create'}
+      title={isEdit ? '编辑出库单' : '新增出库单'}
       backTo={isEdit ? `/outbound/${id}` : '/outbound'}
-      backLabel="出库管理"
+      backLabel={t('出库管理')}
       wide
       onSubmit={handleSave}
       onCancel={() => navigate(isEdit ? `/outbound/${id}` : '/outbound')}
@@ -159,12 +194,12 @@ export default function OutboundForm() {
       )}
 
       <GroupedFormStack>
-        <GroupedFormSection title="出库信息">
+        <GroupedFormSection title={t('出库信息')}>
           <GroupedFormRow>
-            <GroupedFormItem label="用途" required>
+            <GroupedFormItem label={t('用途')} required>
               <Select value={form.purposeId} onValueChange={(v) => setForm({ ...form, purposeId: v })}>
                 <SelectTrigger className={groupedFormSelectTriggerClass}>
-                  <SelectValue placeholder="请选择出库用途" />
+                  <SelectValue placeholder={t('请选择出库用途')} />
                 </SelectTrigger>
                 <SelectContent>
                   {purposeOptions.map((p) => (
@@ -173,10 +208,10 @@ export default function OutboundForm() {
                 </SelectContent>
               </Select>
             </GroupedFormItem>
-            <GroupedFormItem label="目的地">
-              <Select value={form.destinationId} onValueChange={(v) => setForm({ ...form, destinationId: v })}>
+            <GroupedFormItem label={t('领用人')}>
+              <Select value={form.destinationId} onValueChange={handleDestinationChange}>
                 <SelectTrigger className={groupedFormSelectTriggerClass}>
-                  <SelectValue placeholder="请选择出库目的地" />
+                  <SelectValue placeholder={t('请选择领用人')} />
                 </SelectTrigger>
                 <SelectContent>
                   {destinationOptions.map((d) => (
@@ -186,15 +221,46 @@ export default function OutboundForm() {
               </Select>
             </GroupedFormItem>
           </GroupedFormRow>
-          <GroupedFormItem label="领用人">
-            <Input
-              className={groupedFormInputClass}
-              value={form.recipient}
-              onChange={(e) => setForm({ ...form, recipient: e.target.value })}
-              placeholder="联系人或领取单位"
-            />
-          </GroupedFormItem>
+          <GroupedFormRow>
+            <GroupedFormItem label={t('联系人')}>
+              <Input
+                className={groupedFormInputClass}
+                value={form.contact}
+                onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                placeholder={t('选填')}
+              />
+            </GroupedFormItem>
+            <GroupedFormItem label={t('电话')}>
+              <Input
+                className={groupedFormInputClass}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder={t('选填')}
+              />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label={t('创建日期')} required>
+              <InlineDatePicker
+                value={form.orderDate || undefined}
+                onChange={(v) => setForm({ ...form, orderDate: v ?? '' })}
+              />
+            </GroupedFormItem>
+            <GroupedFormItem label={t('计划发货日期')}>
+              <InlineDatePicker
+                value={form.plannedShipDate || undefined}
+                onChange={(v) => setForm({ ...form, plannedShipDate: v ?? '' })}
+                placeholder={t('选填')}
+              />
+            </GroupedFormItem>
+          </GroupedFormRow>
         </GroupedFormSection>
+
+        <GroupedFormRemark
+          value={form.remark}
+          onChange={(v) => setForm({ ...form, remark: v })}
+          placeholder={t('选填')}
+        />
 
         <OutboundLinesEditor
           lines={form.lines}

@@ -1,5 +1,6 @@
 import { builder } from '../builder.js'
 import { getOutboundOrderForPrint } from '../lib/print-data.js'
+import { publishDocumentUpdated } from '../lib/realtime-publish.js'
 import { containsI, genOrderNo, genQrCode, calcExpiryLevel } from '../lib/utils.js'
 import { formatStatus } from '../lib/log-diff.js'
 import { writeSystemLog } from '../lib/system-log.js'
@@ -30,7 +31,12 @@ function snapOutboundOrder(order: {
   purpose?: string | null
   destination?: string | null
   recipient?: string | null
+  contact?: string | null
+  phone?: string | null
+  orderDate?: Date | null
   rejectReason?: string | null
+  plannedShipDate?: Date | null
+  remark?: string | null
   status?: string
   lines?: Array<{ material?: { name: string }; requestedQty: number }>
 }) {
@@ -38,7 +44,12 @@ function snapOutboundOrder(order: {
     purpose: order.purpose,
     destination: order.destination,
     recipient: order.recipient,
+    contact: order.contact,
+    phone: order.phone,
+    orderDate: order.orderDate,
     rejectReason: order.rejectReason,
+    plannedShipDate: order.plannedShipDate,
+    remark: order.remark,
     status: order.status ? formatStatus(order.status) : undefined,
     lineCount: order.lines?.length ?? 0,
     lines: order.lines?.map((l) => `${l.material?.name ?? '?'}×${l.requestedQty}`).join('；') || '—',
@@ -57,6 +68,11 @@ const CreateOutboundInput = builder.inputType('CreateOutboundInput', {
     purposeId: t.id({ required: false }),
     destinationId: t.id({ required: false }),
     recipient: t.string({ required: false }),
+    contact: t.string({ required: false }),
+    phone: t.string({ required: false }),
+    orderDate: t.field({ type: 'DateTime', required: false }),
+    plannedShipDate: t.field({ type: 'DateTime', required: false }),
+    remark: t.string({ required: false }),
     lines: t.field({ type: [OutboundLineInput], required: true }),
   }),
 })
@@ -67,6 +83,11 @@ const UpdateOutboundInput = builder.inputType('UpdateOutboundInput', {
     purposeId: t.id({ required: false }),
     destinationId: t.id({ required: false }),
     recipient: t.string({ required: false }),
+    contact: t.string({ required: false }),
+    phone: t.string({ required: false }),
+    orderDate: t.field({ type: 'DateTime', required: false }),
+    plannedShipDate: t.field({ type: 'DateTime', required: false }),
+    remark: t.string({ required: false }),
     lines: t.field({ type: [OutboundLineInput], required: false }),
   }),
 })
@@ -85,14 +106,20 @@ builder.queryField('getOutboundOrders', (t) =>
     authScopes: { authenticated: true },
     args: {
       status: t.arg.string({ required: false }),
+      statuses: t.arg.string({ required: false }),
       orderNo: t.arg.string({ required: false }),
       dateFrom: t.arg({ type: 'DateTime', required: false }),
       dateTo: t.arg({ type: 'DateTime', required: false }),
       input: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: async (_, { status, orderNo, dateFrom, dateTo, input }, ctx) => {
+    resolve: async (_, { status, statuses, orderNo, dateFrom, dateTo, input }, ctx) => {
       const where: Record<string, unknown> = {}
-      if (status) where.status = status
+      if (statuses) {
+        const list = statuses.split(',').map((s) => s.trim()).filter(Boolean)
+        if (list.length) where.status = { in: list }
+      } else if (status) {
+        where.status = status
+      }
       if (orderNo) where.orderNo = containsI(orderNo)
       if (dateFrom || dateTo) {
         where.createdAt = {}
@@ -213,6 +240,11 @@ builder.mutationField('createOutboundOrder', (t) =>
           purpose,
           destination,
           recipient: input.recipient,
+          contact: input.contact,
+          phone: input.phone,
+          orderDate: input.orderDate,
+          plannedShipDate: input.plannedShipDate,
+          remark: input.remark,
           createdById: ctx.identity!.userId,
           lines: {
             create: input.lines.map((l) => ({
@@ -382,6 +414,7 @@ builder.mutationField('approveOutboundOrder', (t) =>
           rejectReason: approved ? order.rejectReason : (rejectReason ?? order.rejectReason),
         },
       })
+      await publishDocumentUpdated(ctx, 'outbound', input.id, approved ? 'approved' : 'rejected')
       return result
     },
   }),
@@ -404,6 +437,7 @@ builder.mutationField('startPicking', (t) =>
         before: { status: formatStatus(order.status) },
         after: { status: formatStatus('PICKING') },
       })
+      await publishDocumentUpdated(ctx, 'outbound', input.id, 'start_picking')
       return result
     },
   }),
@@ -514,6 +548,8 @@ builder.mutationField('pickOutboundLine', (t) =>
         detail: { qrCode: input.stockQrCode, qty: input.pickedQty },
       })
 
+      await publishDocumentUpdated(ctx, 'outbound', line.orderId, 'pick_line')
+
       return {
         picked: input.pickedQty,
         remaining,
@@ -548,6 +584,7 @@ builder.mutationField('shipOutboundOrder', (t) =>
         before: { status: formatStatus(order.status) },
         after: { status: formatStatus('SHIPPED') },
       })
+      await publishDocumentUpdated(ctx, 'outbound', input.id, 'ship')
       return result
     },
   }),
@@ -573,6 +610,7 @@ builder.mutationField('completeOutboundOrder', (t) =>
         before: { status: formatStatus(order.status) },
         after: { status: formatStatus('COMPLETED') },
       })
+      await publishDocumentUpdated(ctx, 'outbound', input.id, 'complete')
       return result
     },
   }),

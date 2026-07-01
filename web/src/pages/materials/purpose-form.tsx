@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'c
 import { GET_OUTBOUND_PURPOSES, ADD_OUTBOUND_PURPOSE } from './queries'
 
 export default function OutboundPurposeForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -62,23 +64,23 @@ export default function OutboundPurposeForm() {
     <FormPage
       mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=purposes"
-      backLabel="出库用途"
+      backLabel={t('出库用途')}
       onSubmit={handleSave}
       onCancel={() => navigate('/materials?tab=purposes')}
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="用途信息">
+        <GroupedFormSection title={t('用途信息')}>
           <GroupedFormRow>
-            <GroupedFormItem label="用途编码" required>
+            <GroupedFormItem label={t('用途编码')} required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             </GroupedFormItem>
-            <GroupedFormItem label="用途名称" required>
+            <GroupedFormItem label={t('用途名称')} required>
               <Input className={groupedFormInputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="排序">
+            <GroupedFormItem label={t('排序')}>
               <Input
                 type="number"
                 className={groupedFormInputClass}
@@ -86,14 +88,14 @@ export default function OutboundPurposeForm() {
                 onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) || 0 })}
               />
             </GroupedFormItem>
-            <GroupedFormItem label="状态">
+            <GroupedFormItem label={t('状态')}>
               <Select value={form.enabled} onValueChange={(v) => setForm({ ...form, enabled: v })}>
                 <SelectTrigger className={groupedFormSelectTriggerClass}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="true">启用</SelectItem>
-                  <SelectItem value="false">停用</SelectItem>
+                  <SelectItem value="true">{t('启用')}</SelectItem>
+                  <SelectItem value="false">{t('停用')}</SelectItem>
                 </SelectContent>
               </Select>
             </GroupedFormItem>

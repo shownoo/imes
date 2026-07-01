@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { LucideIcon } from 'lucide-react'
 import { useChetaVisualVariant } from 'contexts/cheta-visual-variant-context'
 import {
@@ -31,6 +32,7 @@ type LeaderKpiItem = {
 }
 
 export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: LeaderKpiItem[] }) {
+  const { t } = useTranslation()
   const { variant } = useChetaVisualVariant()
   const viDefault = useLeaderVi()
   const vi = viProp ?? viDefault
@@ -140,7 +142,7 @@ export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: Lea
               color: vi.textMuted,
               fontWeight: 750,
             }}
-          >核心指标</div>
+          >{t('核心指标')}</div>
           <div
             style={{
               height: 1,
@@ -184,7 +186,7 @@ export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: Lea
                     paddingBottom: 6,
                     borderBottom: `1px dashed color-mix(in srgb, ${vi.border} 80%, transparent)`,
                   }}
-                >关键指标</div>
+                >{t('关键指标')}</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -532,7 +534,7 @@ export function LeaderKpiGrid({ vi: viProp, items }: { vi?: LeaderVi; items: Lea
                     background: vi.primary,
                   }}
                 />
-                <span style={{ fontSize: 11, color: vi.textMuted, fontWeight: 700 }}>主指标卡</span>
+                <span style={{ fontSize: 11, color: vi.textMuted, fontWeight: 700 }}>{t('主指标卡')}</span>
               </div>
               {content}
             </div>

@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Trash2 } from 'lucide-react'
 import { AddButton } from 'components/add-button'
 import { Button } from 'components/common'
@@ -30,6 +31,7 @@ import { cn } from 'lib/utils'
 export type MaterialOption = Record<string, unknown>
 
 function materialField(material: MaterialOption | undefined, key: string) {
+  const { t } = useTranslation()
   if (!material) return null
   const v = material[key]
   if (v == null || v === '') return null
@@ -37,11 +39,13 @@ function materialField(material: MaterialOption | undefined, key: string) {
 }
 
 function materialCategoryName(material: MaterialOption | undefined) {
+  const { t } = useTranslation()
   const name = (material?.category as { name?: string } | undefined)?.name
   return name ? String(name) : null
 }
 
 export function materialSummary(material: MaterialOption | undefined) {
+  const { t } = useTranslation()
   if (!material) return null
   const parts = [
     materialField(material, 'code'),
@@ -55,6 +59,7 @@ export function materialSummary(material: MaterialOption | undefined) {
 }
 
 function materialReadonlyColumns(material: MaterialOption | undefined) {
+  const { t } = useTranslation()
   return {
     spec: materialField(material, 'spec'),
     unit: materialField(material, 'unit'),
@@ -63,6 +68,7 @@ function materialReadonlyColumns(material: MaterialOption | undefined) {
 }
 
 function TableFormReadonlyCell({ value }: { value: string | null }) {
+  const { t } = useTranslation()
   return (
     <span className={cn(tableFormReadonlyClass, !value && 'text-muted-foreground/45')}>
       {value || '—'}
@@ -128,19 +134,17 @@ export function MaterialLinesEditor({
         </colgroup>
         <tbody>
           <tr>
-            <td className={tableFormHeaderClass} title="序号">#</td>
-            <td className={cn(tableFormHeaderClass, 'text-left')}>物资</td>
-            {manufacturerEditable ? <td className={tableFormHeaderClass}>厂牌</td> : null}
-            <td className={tableFormHeaderClass}>规格</td>
-            <td className={tableFormHeaderClass}>单位</td>
-            <td className={tableFormHeaderClass}>大类</td>
+            <td className={tableFormHeaderClass} title={'序号'}>#</td>
+            <td className={cn(tableFormHeaderClass, 'text-left')}>{'物资'}</td>
+            {manufacturerEditable ? <td className={tableFormHeaderClass}>{'厂牌'}</td> : null}
+            <td className={tableFormHeaderClass}>{'规格'}</td>
+            <td className={tableFormHeaderClass}>{'单位'}</td>
+            <td className={tableFormHeaderClass}>{'大类'}</td>
             <td className={cn(tableFormHeaderClass, 'text-right')}>{quantityLabel}</td>
           </tr>
           {lines.length === 0 ? (
             <tr>
-              <td colSpan={colCount} className={cn(tableFormCellClass, 'h-16 text-center text-[13px] text-muted-foreground')}>
-                暂无明细
-              </td>
+              <td colSpan={colCount} className={cn(tableFormCellClass, 'h-16 text-center text-[13px] text-muted-foreground')}>{'暂无明细'}</td>
             </tr>
           ) : (
             lines.map((line, i) => {
@@ -154,7 +158,7 @@ export function MaterialLinesEditor({
                         <button
                           type="button"
                           className="text-muted-foreground hover:text-destructive"
-                          title="删除此行"
+                          title={'删除此行'}
                           onClick={() => removeLine(i)}
                         >
                           <Trash2 className="size-3.5" />
@@ -177,7 +181,7 @@ export function MaterialLinesEditor({
                         className={tableFormInputClass}
                         value={line.manufacturer ?? ''}
                         onChange={(e) => updateLine(i, { manufacturer: e.target.value })}
-                        placeholder="厂牌"
+                        placeholder={'厂牌'}
                       />
                     </td>
                   ) : null}
@@ -212,7 +216,7 @@ export function MaterialLinesEditor({
       <Table className={cn(gridTableClass, 'min-w-[28rem]')}>
         <TableHeader>
           <TableRow className={`${gridTableRowClass} hover:bg-transparent`}>
-            <TableHead className={gridTableHeadClass}>物资</TableHead>
+            <TableHead className={gridTableHeadClass}>{'物资'}</TableHead>
             <TableHead className={cn(gridTableHeadClass, 'w-28 text-right')}>{quantityLabel}</TableHead>
             <TableHead className={cn(gridTableHeadClass, 'w-12 border-r-0')} />
           </TableRow>
@@ -220,9 +224,7 @@ export function MaterialLinesEditor({
         <TableBody>
           {lines.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={3} className={`${gridTableCellClass} h-20 border-r-0 text-center text-muted-foreground`}>
-                暂无明细
-              </TableCell>
+              <TableCell colSpan={3} className={`${gridTableCellClass} h-20 border-r-0 text-center text-muted-foreground`}>{'暂无明细'}</TableCell>
             </TableRow>
           ) : (
             lines.map((line, i) => {
@@ -264,7 +266,7 @@ export function MaterialLinesEditor({
                         size="icon"
                         className="size-8 text-muted-foreground hover:text-destructive"
                         onClick={() => removeLine(i)}
-                        title="删除行"
+                        title={'删除行'}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -279,7 +281,7 @@ export function MaterialLinesEditor({
       {(footer || !hideFooterAdd || filledCount > 0) && (
         <div className="flex flex-wrap items-center gap-2 border-t border-border/30 px-4 py-2.5">
           {footer}
-          {!hideFooterAdd && <AddButton title="行" onClick={onAddLine} />}
+          {!hideFooterAdd && <AddButton title={'行'} onClick={onAddLine} />}
           {filledCount > 0 && (
             <span className="text-xs tabular-nums text-muted-foreground">已填 {filledCount} 行</span>
           )}

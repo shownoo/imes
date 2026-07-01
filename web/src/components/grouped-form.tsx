@@ -266,7 +266,7 @@ export function DocumentLinesSection({
     <div className={cn('mt-1', className)}>
       <div className="mb-2 flex items-center justify-between gap-3 px-0.5">
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          <span className="text-[13px] font-medium text-foreground/75">
             {title}
           </span>
           {tip && <InfoTip side="right">{tip}</InfoTip>}
@@ -274,7 +274,7 @@ export function DocumentLinesSection({
         {trailing ? <div className="flex shrink-0 items-center gap-2">{trailing}</div> : null}
       </div>
       {caption ? (
-        <p className="mb-2 px-0.5 text-[12px] leading-relaxed text-muted-foreground/80">{caption}</p>
+        <p className="mb-2.5 px-0.5 text-[13px] leading-relaxed text-muted-foreground">{caption}</p>
       ) : null}
       {children}
       {onAddLine || footerExtra ? (

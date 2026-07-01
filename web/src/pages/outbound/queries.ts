@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 
-export const GET_OUTBOUND = gql`query GetOutboundOrders($status: String, $orderNo: String, $dateFrom: DateTime, $dateTo: DateTime, $input: PaginationInput) { getOutboundOrders(status: $status, orderNo: $orderNo, dateFrom: $dateFrom, dateTo: $dateTo, input: $input) }`
+export const GET_OUTBOUND = gql`query GetOutboundOrders($status: String, $statuses: String, $orderNo: String, $dateFrom: DateTime, $dateTo: DateTime, $input: PaginationInput) { getOutboundOrders(status: $status, statuses: $statuses, orderNo: $orderNo, dateFrom: $dateFrom, dateTo: $dateTo, input: $input) }`
 export const GET_ORDER = gql`query GetOutboundOrder($input: IdInput!) { getOutboundOrder(input: $input) }`
 export const GET_MATERIALS = gql`query GetMaterials($input: PaginationInput) { getMaterials(input: $input) }`
 export const GET_OUTBOUND_PURPOSES = gql`query GetOutboundPurposes($enabledOnly: Boolean, $input: PaginationInput) { getOutboundPurposes(enabledOnly: $enabledOnly, input: $input) }`
@@ -24,6 +24,10 @@ export interface OutboundLineRow { materialId: string; requestedQty: number }
 export const emptyOutboundForm = () => ({
   purposeId: '',
   destinationId: '',
-  recipient: '',
+  contact: '',
+  phone: '',
+  orderDate: '',
+  plannedShipDate: '',
+  remark: '',
   lines: [{ materialId: '', requestedQty: 1 }] as OutboundLineRow[],
 })

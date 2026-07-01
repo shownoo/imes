@@ -1,5 +1,5 @@
 import { builder } from '../builder.js'
-import { readOrgCity, writeOrgCity } from '../lib/org-config.js'
+import { readOrgCity, readOrgLicensee, writeOrgCity, writeOrgLicensee } from '../lib/org-config.js'
 import { writeSystemLog } from '../lib/system-log.js'
 
 const SetOrgCityInput = builder.inputType('SetOrgCityInput', {
@@ -8,11 +8,25 @@ const SetOrgCityInput = builder.inputType('SetOrgCityInput', {
   }),
 })
 
+const SetOrgLicenseeInput = builder.inputType('SetOrgLicenseeInput', {
+  fields: (t) => ({
+    name: t.string({ required: true }),
+  }),
+})
+
 builder.queryField('getOrgCity', (t) =>
   t.field({
     type: 'JSON',
     authScopes: { authenticated: true },
     resolve: async (_, __, ctx) => ({ city: await readOrgCity(ctx.prisma) }),
+  }),
+)
+
+builder.queryField('getOrgLicensee', (t) =>
+  t.field({
+    type: 'JSON',
+    authScopes: { authenticated: true },
+    resolve: async (_, __, ctx) => ({ name: await readOrgLicensee(ctx.prisma) }),
   }),
 )
 
@@ -37,4 +51,26 @@ builder.mutationField('setOrgCity', (t) =>
   }),
 )
 
+builder.mutationField('setOrgLicensee', (t) =>
+  t.field({
+    type: 'JSON',
+    authScopes: { admin: true },
+    args: { input: t.arg({ type: SetOrgLicenseeInput, required: true }) },
+    resolve: async (_, { input }, ctx) => {
+      const before = await readOrgLicensee(ctx.prisma)
+      const name = await writeOrgLicensee(ctx.prisma, input.name)
+      await writeSystemLog(ctx, {
+        action: 'UPDATE',
+        module: 'USER',
+        summary: `更新授权单位为「${name}」`,
+        targetLabel: ORG_LICENSEE_LABEL,
+        before: { name: before },
+        after: { name },
+      })
+      return { name }
+    },
+  }),
+)
+
 const ORG_CITY_LABEL = 'org_city'
+const ORG_LICENSEE_LABEL = 'org_licensee'

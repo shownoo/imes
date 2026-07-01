@@ -1,4 +1,6 @@
 import { builder } from '../builder.js'
+import { cached } from '../lib/cache.js'
+import { invalidateSupplierCache, supplierListKey } from '../lib/master-cache.js'
 import { containsI } from '../lib/utils.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { IdInput, PaginationInput } from './input-types.js'
@@ -22,12 +24,15 @@ builder.queryField('getSuppliers', (t) =>
     args: { input: t.arg({ type: PaginationInput, required: false }) },
     resolve: async (_, { input }, ctx) => {
       const { search, take, skip } = input ?? {}
-      const where = search ? { OR: [{ name: containsI(search) }, { code: containsI(search) }] } : {}
-      const [suppliers, count] = await Promise.all([
-        ctx.prisma.supplier.findMany({ where, take: take ?? 50, skip: skip ?? 0 }),
-        ctx.prisma.supplier.count({ where }),
-      ])
-      return { suppliers, count }
+      const queryInput = { search: search ?? null, take: take ?? 50, skip: skip ?? 0 }
+      return cached(supplierListKey(queryInput), async () => {
+        const where = search ? { OR: [{ name: containsI(search) }, { code: containsI(search) }] } : {}
+        const [suppliers, count] = await Promise.all([
+          ctx.prisma.supplier.findMany({ where, take: queryInput.take, skip: queryInput.skip }),
+          ctx.prisma.supplier.count({ where }),
+        ])
+        return { suppliers, count }
+      })
     },
   }),
 )
@@ -51,6 +56,7 @@ builder.mutationField('addSupplier', (t) =>
           before: existing as unknown as Record<string, unknown>,
           after: result as unknown as Record<string, unknown>,
         })
+        await invalidateSupplierCache()
         return result
       }
       const result = await ctx.prisma.supplier.create({ data: data as never })
@@ -62,6 +68,7 @@ builder.mutationField('addSupplier', (t) =>
         targetLabel: result.code,
         after: result as unknown as Record<string, unknown>,
       })
+      await invalidateSupplierCache()
       return result
     },
   }),
@@ -83,6 +90,7 @@ builder.mutationField('delSupplier', (t) =>
         targetLabel: supplier.code,
         before: supplier as unknown as Record<string, unknown>,
       })
+      await invalidateSupplierCache()
       return result
     },
   }),

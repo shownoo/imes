@@ -1,5 +1,6 @@
 import { ArrowLeft, ChevronLeft } from 'lucide-react'
 import { cn } from 'lib/utils'
+import { useTranslation } from 'react-i18next'
 
 export interface CompactPageToolbarPrimaryAction {
   onSubmit: () => void
@@ -23,6 +24,7 @@ export interface CompactPageToolbarProps {
 }
 
 function SegmentedPrimaryAction(props: CompactPageToolbarPrimaryAction) {
+  const { t } = useTranslation()
   const {
     onSubmit,
     loading,
@@ -84,8 +86,9 @@ export function CompactPageToolbar({
   primaryAction,
   className,
 }: CompactPageToolbarProps) {
-  const splitHeadline = Boolean(heading)
-  const backText = splitHeadline ? '返回' : `返回${backLabel}`
+  const { t } = useTranslation()
+  const showBreadcrumb = Boolean(heading && backLabel)
+  const backText = showBreadcrumb ? backLabel : heading ? '返回' : `返回${backLabel}`
 
   return (
     <div
@@ -97,29 +100,38 @@ export function CompactPageToolbar({
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className={cn(
-            'group flex h-7 shrink-0 items-center rounded-md transition-colors hover:bg-muted/80',
-            splitHeadline
-              ? 'max-w-[min(100%,14rem)] -ml-0.5 gap-1.5 px-2 py-1 text-[13px] font-medium text-muted-foreground hover:text-foreground'
-              : 'max-w-[min(100%,18rem)] -ml-0.5 gap-1 px-1.5 text-[12px] font-medium leading-none text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {splitHeadline ? (
-            <ChevronLeft className="size-4 shrink-0" strokeWidth={2} />
-          ) : (
-            <ArrowLeft
-              className="size-3.5 shrink-0 transition-transform group-hover:-translate-x-px"
-              strokeWidth={2}
-            />
-          )}
-          <span className="truncate tracking-tight">{backText}</span>
-        </button>
-        {heading ? (
-          <span className="truncate text-[13px] font-semibold tracking-tight text-foreground">{heading}</span>
-        ) : null}
+        <nav className="flex min-w-0 items-center gap-1 text-[13px]" aria-label={t('页面导航')}>
+          <button
+            type="button"
+            onClick={onBack}
+            className={cn(
+              'group flex h-7 shrink-0 items-center rounded-md transition-colors hover:bg-muted/80',
+              showBreadcrumb
+                ? 'max-w-[min(100%,14rem)] -ml-0.5 gap-1.5 px-2 py-1 font-medium text-muted-foreground hover:text-foreground'
+                : 'max-w-[min(100%,18rem)] -ml-0.5 gap-1 px-1.5 text-[12px] font-medium leading-none text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {showBreadcrumb || heading ? (
+              <ChevronLeft className="size-4 shrink-0" strokeWidth={2} />
+            ) : (
+              <ArrowLeft
+                className="size-3.5 shrink-0 transition-transform group-hover:-translate-x-px"
+                strokeWidth={2}
+              />
+            )}
+            <span className="truncate tracking-tight">{backText}</span>
+          </button>
+          {showBreadcrumb ? (
+            <>
+              <span className="shrink-0 px-0.5 text-muted-foreground/25 select-none" aria-hidden>/</span>
+              <span aria-current="page" className="min-w-0 truncate font-semibold tracking-tight text-foreground">
+                {heading}
+              </span>
+            </>
+          ) : heading ? (
+            <span className="truncate text-[13px] font-semibold tracking-tight text-foreground">{heading}</span>
+          ) : null}
+        </nav>
         {prefix ? (
           <div className="flex min-w-0 shrink items-center gap-2">{prefix}</div>
         ) : null}

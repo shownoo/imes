@@ -4,6 +4,7 @@ import { Button } from 'components/ui/button'
 import { Input } from 'components/ui/input'
 import { QrScannerDialog } from 'components/qr-scanner-dialog'
 import { cn } from 'lib/utils'
+import { useTranslation } from 'react-i18next'
 
 type QrScanInputProps = {
   value: string
@@ -24,6 +25,7 @@ export function QrScanInput({
   className,
   disabled,
 }: QrScanInputProps) {
+  const { t } = useTranslation()
   const [scannerOpen, setScannerOpen] = useState(false)
 
   const handleScan = (text: string) => {
@@ -54,7 +56,7 @@ export function QrScanInput({
           disabled={disabled}
           onClick={() => setScannerOpen(true)}
         >
-          <ScanLine className="size-4" />扫码</Button>
+          <ScanLine className="size-4" />{t('扫码')}</Button>
         {onSubmit && (
           <Button
             type="button"

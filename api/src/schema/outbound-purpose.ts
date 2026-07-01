@@ -1,4 +1,9 @@
 import { builder } from '../builder.js'
+import { cached } from '../lib/cache.js'
+import {
+  invalidateOutboundPurposeCache,
+  outboundPurposeListKey,
+} from '../lib/master-cache.js'
 import { containsI } from '../lib/utils.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { IdInput, PaginationInput } from './input-types.js'
@@ -23,21 +28,29 @@ builder.queryField('getOutboundPurposes', (t) =>
     },
     resolve: async (_, { enabledOnly, input }, ctx) => {
       const { search, take, skip } = input ?? {}
-      const where: Record<string, unknown> = {}
-      if (enabledOnly) where.enabled = true
-      if (search) {
-        where.OR = [{ name: containsI(search) }, { code: containsI(search) }]
+      const queryInput = {
+        enabledOnly: enabledOnly ?? null,
+        search: search ?? null,
+        take: take ?? 100,
+        skip: skip ?? 0,
       }
-      const [purposes, count] = await Promise.all([
-        ctx.prisma.outboundPurpose.findMany({
-          where,
-          take: take ?? 100,
-          skip: skip ?? 0,
-          orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
-        }),
-        ctx.prisma.outboundPurpose.count({ where }),
-      ])
-      return { purposes, count }
+      return cached(outboundPurposeListKey(queryInput), async () => {
+        const where: Record<string, unknown> = {}
+        if (enabledOnly) where.enabled = true
+        if (search) {
+          where.OR = [{ name: containsI(search) }, { code: containsI(search) }]
+        }
+        const [purposes, count] = await Promise.all([
+          ctx.prisma.outboundPurpose.findMany({
+            where,
+            take: queryInput.take,
+            skip: queryInput.skip,
+            orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+          }),
+          ctx.prisma.outboundPurpose.count({ where }),
+        ])
+        return { purposes, count }
+      })
     },
   }),
 )
@@ -61,6 +74,7 @@ builder.mutationField('addOutboundPurpose', (t) =>
           before: existing as unknown as Record<string, unknown>,
           after: result as unknown as Record<string, unknown>,
         })
+        await invalidateOutboundPurposeCache()
         return result
       }
       const result = await ctx.prisma.outboundPurpose.create({ data: data as never })
@@ -72,6 +86,7 @@ builder.mutationField('addOutboundPurpose', (t) =>
         targetLabel: result.code,
         after: result as unknown as Record<string, unknown>,
       })
+      await invalidateOutboundPurposeCache()
       return result
     },
   }),
@@ -95,6 +110,7 @@ builder.mutationField('delOutboundPurpose', (t) =>
         targetLabel: purpose.code,
         before: purpose as unknown as Record<string, unknown>,
       })
+      await invalidateOutboundPurposeCache()
       return result
     },
   }),

@@ -14,4 +14,5 @@ model Shelf {
 
   warehouse  Warehouse   @relation(fields: [warehouseId], references: [id])
   stockItems StockItem[]
+  stocktakes StocktakeTask[]
 }

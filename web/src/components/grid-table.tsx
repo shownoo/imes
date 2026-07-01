@@ -26,13 +26,13 @@ export function AppleTableFrame({ className, children }: { className?: string; c
   )
 }
 
-/** Apple 风表头 — secondary 底 + caption 字阶 */
+/** Apple 风表头 — 中文友好字阶，无 uppercase */
 export const appleTableHeadClass =
-  'h-9 whitespace-nowrap bg-secondary/50 px-3 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/75 first:pl-5 last:pr-5'
+  'h-10 whitespace-nowrap bg-muted/35 px-3 text-left text-[12px] font-medium text-muted-foreground first:pl-5 last:pr-5'
 
 /** Apple 风单元格 */
 export const appleTableCellClass =
-  'whitespace-nowrap px-3 py-2.5 align-middle first:pl-5 last:pr-5'
+  'whitespace-nowrap px-3 py-3 align-middle text-sm first:pl-5 last:pr-5'
 
 /** Apple 风行 — 发丝分隔 + hover tint */
 export const appleTableRowClass =
@@ -63,7 +63,7 @@ export function TableCodeCell({ children, className }: { children?: React.ReactN
   return (
     <span
       className={cn(
-        'font-number text-[13px] font-medium leading-none tracking-tight text-foreground',
+        'font-number text-[13px] font-normal leading-snug tracking-tight text-foreground/85',
         className,
       )}
     >

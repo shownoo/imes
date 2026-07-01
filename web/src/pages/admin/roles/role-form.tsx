@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -17,6 +18,7 @@ import { GET_ROLE, GET_PERMISSIONS, ADD_ROLE, SET_ROLE_PERMISSIONS } from '../qu
 type Permission = { id: string; code: string; name: string; module: string; action: string }
 
 export default function RoleForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -115,7 +117,7 @@ export default function RoleForm() {
       submitLoading={saving || savingPerms}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="角色信息">
+        <GroupedFormSection title={t('角色信息')}>
           <GroupedFormRow>
             <GroupedFormItem label='角色编码' required>
               <Input
@@ -141,12 +143,12 @@ export default function RoleForm() {
         </GroupedFormSection>
 
         <GroupedFormSection
-          title="权限授权"
+          title={t('权限授权')}
           tip={isAdminRole ? '管理员拥有全部权限' : '按模块勾选操作权限'}
         >
           {isAdminRole && (
             <div className="px-3.5 py-2">
-              <Badge>管理员拥有全部权限</Badge>
+              <Badge>{t('管理员拥有全部权限')}</Badge>
             </div>
           )}
 

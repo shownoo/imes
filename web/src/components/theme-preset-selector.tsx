@@ -3,8 +3,10 @@ import { useWorkspace } from 'contexts/workspace-context'
 import { THEME_PRESETS, type ThemePresetId } from 'lib/workspace-theme'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { Label } from 'components/ui/label'
+import { useTranslation } from 'react-i18next'
 
 export function ThemePresetSelector({ compact }: { compact?: boolean }) {
+  const { t } = useTranslation()
   const { theme, setThemeId } = useWorkspace()
 
   if (compact) {
@@ -30,7 +32,7 @@ export function ThemePresetSelector({ compact }: { compact?: boolean }) {
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">界面风格</Label>
+      <Label className="text-xs text-muted-foreground">{t('界面风格')}</Label>
       <Select value={theme.id} onValueChange={(v) => setThemeId(v as ThemePresetId)}>
         <SelectTrigger className="leader-panel-card">
           <SelectValue />

@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useWorkspace } from 'contexts/workspace-context'
 import { VIEW_PERSPECTIVES } from 'lib/workspace-theme'
 import { styleSwitcherMenuChrome, type StyleSwitcherMenuTheme } from 'lib/theme-customizer-surfaces'
+import { useTranslation } from 'react-i18next'
 
 function WidgetRow({
   label,
@@ -62,7 +63,7 @@ function WidgetRow({
         />
         <span>{label}</span>
         {!visible && (
-          <span style={{ fontSize: 11, opacity: 0.65, color: chrome.mutedColor }}>已隐藏</span>
+          <span style={{ fontSize: 11, opacity: 0.65, color: chrome.mutedColor }}>{'已隐藏'}</span>
         )}
       </label>
       <div style={{ display: 'flex', gap: 2 }}>
@@ -133,9 +134,7 @@ export function WorkspaceWidgetPanel({
     <>
       {showHeader ? (
         <div style={{ padding: '6px 10px 4px' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: chrome.titleColor, lineHeight: 1.45 }}>
-            工作台模块
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: chrome.titleColor, lineHeight: 1.45 }}>{'工作台模块'}</div>
           <div style={{ fontSize: 11, opacity: 0.65, marginTop: 2, lineHeight: 1.4, color: chrome.mutedColor }}>
             控制卡片显示与排列 · 已开启 {visibleCount}/{prefs.widgets.length}
           </div>
@@ -177,9 +176,7 @@ export function WorkspaceWidgetPanel({
             color: chrome.mutedColor,
             textTransform: 'uppercase',
           }}
-        >
-          角色视角
-        </div>
+        >{'角色视角'}</div>
         {VIEW_PERSPECTIVES.map((p) => (
           <button
             key={p.id}

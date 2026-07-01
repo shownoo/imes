@@ -69,7 +69,10 @@ export async function getOutboundOrderForPrint(prisma: PrismaClient, id: string)
     purpose: order.purpose ?? '',
     destination: order.destination ?? '',
     recipient: order.recipient ?? '',
-    remark: order.rejectReason ? `驳回原因：${order.rejectReason}` : '',
+    contact: order.contact ?? '',
+    phone: order.phone ?? '',
+    orderDate: formatDate(order.orderDate ?? order.createdAt),
+    remark: order.remark ?? (order.rejectReason ? `驳回原因：${order.rejectReason}` : ''),
     createdBy: {
       name: order.createdBy.name ?? order.createdBy.username,
     },

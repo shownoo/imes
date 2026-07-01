@@ -1,4 +1,6 @@
 import { builder } from '../builder.js'
+import { cached } from '../lib/cache.js'
+import { categoryListKey, invalidateCategoryCache } from '../lib/master-cache.js'
 import { containsI } from '../lib/utils.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { IdInput, PaginationInput } from './input-types.js'
@@ -23,12 +25,20 @@ builder.queryField('getCategories', (t) =>
     args: { input: t.arg({ type: PaginationInput, required: false }) },
     resolve: async (_, { input }, ctx) => {
       const { search, take, skip } = input ?? {}
-      const where = search ? { OR: [{ name: containsI(search) }, { code: containsI(search) }] } : {}
-      const [categories, count] = await Promise.all([
-        ctx.prisma.materialCategory.findMany({ where, take: take ?? 50, skip: skip ?? 0, orderBy: { code: 'asc' } }),
-        ctx.prisma.materialCategory.count({ where }),
-      ])
-      return { categories, count }
+      const queryInput = { search: search ?? null, take: take ?? 50, skip: skip ?? 0 }
+      return cached(categoryListKey(queryInput), async () => {
+        const where = search ? { OR: [{ name: containsI(search) }, { code: containsI(search) }] } : {}
+        const [categories, count] = await Promise.all([
+          ctx.prisma.materialCategory.findMany({
+            where,
+            take: queryInput.take,
+            skip: queryInput.skip,
+            orderBy: { code: 'asc' },
+          }),
+          ctx.prisma.materialCategory.count({ where }),
+        ])
+        return { categories, count }
+      })
     },
   }),
 )
@@ -52,6 +62,7 @@ builder.mutationField('addCategory', (t) =>
           before: existing as unknown as Record<string, unknown>,
           after: result as unknown as Record<string, unknown>,
         })
+        await invalidateCategoryCache()
         return result
       }
       const result = await ctx.prisma.materialCategory.create({ data: data as never })
@@ -63,6 +74,7 @@ builder.mutationField('addCategory', (t) =>
         targetLabel: result.code,
         after: result as unknown as Record<string, unknown>,
       })
+      await invalidateCategoryCache()
       return result
     },
   }),
@@ -84,6 +96,7 @@ builder.mutationField('delCategory', (t) =>
         targetLabel: category.code,
         before: category as unknown as Record<string, unknown>,
       })
+      await invalidateCategoryCache()
       return result
     },
   }),

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ActionLink } from 'components/action-link'
 import {
@@ -19,6 +20,7 @@ export function MovementsTable({
   rows: MovementRow[]
   loading?: boolean
 }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   if (loading) {
@@ -36,20 +38,18 @@ export function MovementsTable({
       <table className={imesDataTableClass}>
         <thead>
           <tr className="border-b border-border/25">
-            <th className={cn(appleTableHeadClass, 'text-left')}>时间</th>
-            <th className={appleTableHeadClass}>类型</th>
-            <th className={cn(appleTableHeadClass, 'text-left')}>物资</th>
-            <th className={appleTableHeadClass}>二维码</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>数量变化</th>
-            <th className={cn(appleTableHeadClass, 'text-left')}>操作人</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{t('时间')}</th>
+            <th className={appleTableHeadClass}>{t('类型')}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{t('物资')}</th>
+            <th className={appleTableHeadClass}>{t('二维码')}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{t('数量变化')}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{t('操作人')}</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-5 py-14 text-center text-[15px] text-muted-foreground">
-                暂无流水
-              </td>
+              <td colSpan={6} className="px-5 py-14 text-center text-[15px] text-muted-foreground">{t('暂无流水')}</td>
             </tr>
           ) : (
             rows.map((row) => {

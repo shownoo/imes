@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -13,6 +14,7 @@ import { Input } from 'components/ui/input'
 import { GET_SUPPLIERS, ADD_SUPPLIER } from './queries'
 
 export default function SupplierForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -70,7 +72,7 @@ export default function SupplierForm() {
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="供应商信息">
+        <GroupedFormSection title={t('供应商信息')}>
           <GroupedFormRow>
             <GroupedFormItem label='供应商编码' required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />

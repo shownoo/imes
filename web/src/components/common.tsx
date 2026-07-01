@@ -108,7 +108,7 @@ export function RowActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete
               <Pencil className="size-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>编辑</TooltipContent>
+          <TooltipContent>{'编辑'}</TooltipContent>
         </Tooltip>
       )}
       {onDelete && (
@@ -118,7 +118,7 @@ export function RowActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete
               <Trash2 className="size-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>删除</TooltipContent>
+          <TooltipContent>{'删除'}</TooltipContent>
         </Tooltip>
       )}
     </div>
@@ -201,7 +201,7 @@ export function ExpiryHealthPanel({ health }: { health: { green: number; yellow:
       <div className="flex items-center justify-between">
         <div className="text-center">
           <p data-leader-kpi-value style={{ color: 'var(--leader-accent)' }}>{health.healthScore}%</p>
-          <p className="text-xs text-muted-foreground">效期健康度</p>
+          <p className="text-xs text-muted-foreground">{'效期健康度'}</p>
         </div>
         <div className="flex gap-4 text-center text-xs">
           <div><span className="block size-3 rounded-full bg-emerald-500 mx-auto mb-1" />安全 {health.greenPct}%</div>

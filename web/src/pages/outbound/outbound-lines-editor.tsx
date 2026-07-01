@@ -29,8 +29,8 @@ export function OutboundLinesEditor({
 
   return (
     <DocumentLinesSection
-      title="出库清单"
-      tip="可上传 PDF 或图片自动识别明细并回填；电子版 PDF 直接提取文字，扫描件请改用图片识别"
+      title={'出库清单'}
+      tip={'可上传 PDF 或图片自动识别明细并回填；电子版 PDF 直接提取文字，扫描件请改用图片识别'}
       onAddLine={onAddLine}
       addTitle="出库清单"
       footerExtra={<InboundImportActions layout="inline" {...importProps} />}

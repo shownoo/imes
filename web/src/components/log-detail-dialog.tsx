@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ function normalizeDetail(raw: unknown): LogDetail | null {
 }
 
 function ChangeValue({ value }: { value: unknown }) {
+  const { t } = useTranslation()
   const text = formatLogDisplayValue(value)
   return <span className="whitespace-pre-wrap break-words leading-relaxed">{text}</span>
 }
@@ -55,6 +57,7 @@ type LogDetailDialogProps = {
 }
 
 export function LogDetailDialog({ open, onOpenChange, log }: LogDetailDialogProps) {
+  const { t } = useTranslation()
   if (!log) return null
 
   const detail = normalizeDetail(log.detail)
@@ -65,7 +68,7 @@ export function LogDetailDialog({ open, onOpenChange, log }: LogDetailDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>日志详情</DialogTitle>
+          <DialogTitle>{t('日志详情')}</DialogTitle>
           <DialogDescription>{String(log.summary ?? '')}</DialogDescription>
         </DialogHeader>
 
@@ -84,9 +87,9 @@ export function LogDetailDialog({ open, onOpenChange, log }: LogDetailDialogProp
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="w-28 bg-muted/40 text-popover-foreground/80">字段</TableHead>
-                  <TableHead className="bg-muted/40 text-popover-foreground/80">修改前</TableHead>
-                  <TableHead className="bg-muted/40 text-popover-foreground/80">修改后</TableHead>
+                  <TableHead className="w-28 bg-muted/40 text-popover-foreground/80">{t('字段')}</TableHead>
+                  <TableHead className="bg-muted/40 text-popover-foreground/80">{t('修改前')}</TableHead>
+                  <TableHead className="bg-muted/40 text-popover-foreground/80">{t('修改后')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -109,7 +112,7 @@ export function LogDetailDialog({ open, onOpenChange, log }: LogDetailDialogProp
             {JSON.stringify(detail, null, 2)}
           </pre>
         ) : (
-          <p className="py-6 text-center text-sm text-popover-foreground/70">暂无变更明细</p>
+          <p className="py-6 text-center text-sm text-popover-foreground/70">{t('暂无变更明细')}</p>
         )}
       </DialogContent>
     </Dialog>

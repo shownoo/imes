@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RotateCcw } from 'lucide-react'
 import { useWorkspace } from 'contexts/workspace-context'
 import type { ChetaVisualVariantId } from 'lib/cheta-kpi-institutional'
@@ -52,6 +53,7 @@ function readCatalogSelection(presetId: LeaderStylePresetId, variant: ChetaVisua
 }
 
 function LayoutMarginIcon() {
+  const { t } = useTranslation()
   return (
     <span
       className="inline-flex h-4 w-3 shrink-0 items-center justify-center rounded-[3px] border bg-muted/50"
@@ -102,6 +104,7 @@ function InlineToggle<T extends string>({
 }
 
 export function LayoutSection() {
+  const { t } = useTranslation()
   const { prefs, setMargin, setMaxWidth, setNavLayout, theme, variant } = useWorkspace()
   const [selection, setSelection] = useState(() => readCatalogSelection(theme.id, variant))
 
@@ -130,7 +133,7 @@ export function LayoutSection() {
           <div className="flex items-center gap-3 border-b pb-3" style={{ borderColor: 'var(--leader-card-border)' }}>
             <StyleCatalogPreview preview={preview} height={44} className="w-[4.5rem] shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-muted-foreground">当前</p>
+              <p className="text-[11px] text-muted-foreground">{t('当前')}</p>
               <p className="truncate text-sm font-semibold">
                 {formatCurrentComboLabel(selection.designSystemId, selection.colorSchemeId)}
               </p>
@@ -140,16 +143,16 @@ export function LayoutSection() {
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">调整菜单位置、左右边距与内容最大宽度，即刻生效</p>
+          <p className="text-xs text-muted-foreground">{t('调整菜单位置、左右边距与内容最大宽度，即刻生效')}</p>
 
           <div className="flex flex-col gap-3 rounded-lg border p-3" style={{ borderColor: 'var(--leader-card-border)' }}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="shrink-0 text-sm font-medium text-foreground">菜单位置</span>
+              <span className="shrink-0 text-sm font-medium text-foreground">{t('菜单位置')}</span>
               <span className="text-xs text-muted-foreground">{getNavLayoutSummaryLabel(prefs.navLayout)}</span>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="shrink-0 text-sm text-muted-foreground">切换布局</span>
+                <span className="shrink-0 text-sm text-muted-foreground">{t('切换布局')}</span>
                 <InlineToggle<NavLayoutId>
                   value={prefs.navLayout}
                   options={NAV_LAYOUT_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
@@ -170,7 +173,7 @@ export function LayoutSection() {
 
             <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="shrink-0 text-sm text-muted-foreground">左右边距</span>
+                <span className="shrink-0 text-sm text-muted-foreground">{t('左右边距')}</span>
                 <InlineToggle<ContentMarginId>
                   value={prefs.margin}
                   options={marginOptions}
@@ -179,7 +182,7 @@ export function LayoutSection() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="shrink-0 text-sm text-muted-foreground">内容最大宽度</span>
+                <span className="shrink-0 text-sm text-muted-foreground">{t('内容最大宽度')}</span>
                 <InlineToggle<ContentMaxWidthId>
                   value={prefs.maxWidth}
                   options={maxWidthOptions}
@@ -200,7 +203,7 @@ export function LayoutSection() {
                 setNavLayout(DEFAULT_PREFERENCES.navLayout)
               }}
             >
-              <RotateCcw className="size-3" />恢复默认</Button>
+              <RotateCcw className="size-3" />{t('恢复默认')}</Button>
           </div>
         </CardContent>
       </Card>

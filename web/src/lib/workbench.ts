@@ -1,3 +1,4 @@
+import { translate } from 'locales'
 import type { ApprovalInboxItem } from 'lib/approval-flow'
 
 export type ActiveDocument = {
@@ -40,7 +41,7 @@ export type WorkbenchSummary = {
 export type TaskCenterTab = 'approvals' | 'submitted' | 'documents'
 
 export function activeDocumentPath(doc: Pick<ActiveDocument, 'id' | 'docType'>) {
-  return doc.docType === '物资出库' ? `/outbound/${doc.id}` : `/inbound/${doc.id}`
+  return doc.docType === translate('物资出库') ? `/outbound/${doc.id}` : `/inbound/${doc.id}`
 }
 
 export function parseTaskCenterTab(value: string | null): TaskCenterTab {

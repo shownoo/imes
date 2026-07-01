@@ -160,9 +160,7 @@ function ColumnSettingsPanel<TData>({
             size="sm"
             className="h-7 w-full text-xs"
             onClick={onResetColumnSettings}
-          >
-            恢复默认
-          </Button>
+          >{'恢复默认'}</Button>
         </div>
       ) : null}
     </div>
@@ -211,13 +209,13 @@ export function DataTableColumnSettings<TData>({
                 inFooter ? 'size-7 shrink-0' : 'size-7 shrink-0 text-muted-foreground hover:text-foreground',
                 className,
               )}
-              aria-label="列设置"
+              aria-label={'列设置'}
             >
               <Columns3 className="size-3.5" aria-hidden />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent side={tooltipSide}>列设置</TooltipContent>
+        <TooltipContent side={tooltipSide}>{'列设置'}</TooltipContent>
       </Tooltip>
       <PopoverContent side={popoverSide} align="end" className="w-auto p-0">
         <ColumnSettingsPanel

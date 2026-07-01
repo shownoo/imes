@@ -11,4 +11,5 @@ model Warehouse {
 
   shelves       Shelf[]
   inboundOrders InboundOrder[]
+  stocktakes    StocktakeTask[]
 }

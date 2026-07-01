@@ -11,21 +11,42 @@ import {
   useOrderDateFilter,
 } from 'components/order-list-chrome'
 import { ListFilterField } from 'components/list-filter-toolbar'
-import { StatusBadge } from 'components/status-badge'
+import { InboundStatusBadge } from 'components/inbound-status-badge'
 import { StatusFilterBar } from 'components/status-filter-bar'
 import { WarehouseFilter } from 'components/warehouse-filter'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
+import { useWorkMode } from 'contexts/work-mode-context'
 import { INBOUND_STATUS_FILTERS } from 'lib/order-status'
+import {
+  INBOUND_OPERATIONS_DEFAULT_STATUS,
+  INBOUND_OPERATIONS_STATUS_FILTERS,
+  resolveInboundListQuery,
+  shouldShowOrderCreate,
+} from 'lib/work-mode'
 import { listFilterSelectTriggerClass } from 'lib/list-index-chrome'
 import { INBOUND_TYPE_LABELS, formatDate } from 'lib/utils'
 import { GET_INBOUND, GET_WAREHOUSES, GET_SUPPLIERS, DEL } from './queries'
+import { useMobileOpsUi } from 'hooks/use-mobile-ops-ui'
+import { Navigate } from 'react-router-dom'
+import { MOBILE_OPS_HOME } from 'lib/mobile-ops'
 
 const INBOUND_TITLE_TIP = '选单清点 → 批次效期 → 蓝牙赋码 → 扫码上架'
 
 export default function InboundIndex() {
+  const mobileOps = useMobileOpsUi()
+  if (mobileOps) return <Navigate to={MOBILE_OPS_HOME} replace />
+
+  return <InboundDesktopIndex />
+}
+
+function InboundDesktopIndex() {
   const navigate = useNavigate()
-  const [statusFilter, setStatusFilter] = useState('all')
+  const { mode } = useWorkMode()
+  const isOperations = mode === 'operations'
+  const [statusFilter, setStatusFilter] = useState(
+    isOperations ? INBOUND_OPERATIONS_DEFAULT_STATUS : 'all',
+  )
   const [warehouseFilter, setWarehouseFilter] = useState('all')
   const [orderNo, setOrderNo] = useState('')
   const [supplierFilter, setSupplierFilter] = useState('all')
@@ -39,7 +60,7 @@ export default function InboundIndex() {
   const { data, loading, refetch } = useQuery(GET_INBOUND, {
     variables: {
       type: 'PURCHASE',
-      status: statusFilter === 'all' ? undefined : statusFilter,
+      ...resolveInboundListQuery(statusFilter),
       warehouseId: warehouseFilter === 'all' ? undefined : warehouseFilter,
       orderNo: orderNo || undefined,
       supplierId: supplierFilter === 'all' ? undefined : supplierFilter,
@@ -56,6 +77,11 @@ export default function InboundIndex() {
   const total = inboundResult?.count ?? 0
 
   useEffect(() => {
+    setStatusFilter(isOperations ? INBOUND_OPERATIONS_DEFAULT_STATUS : 'all')
+    setPage(1)
+  }, [mode, isOperations])
+
+  useEffect(() => {
     setPage(1)
   }, [statusFilter, warehouseFilter, orderNo, supplierFilter, dateVars.dateFrom, dateVars.dateTo])
 
@@ -68,12 +94,22 @@ export default function InboundIndex() {
     return counts
   }, [orders, total])
 
+  const statusOptions = isOperations ? INBOUND_OPERATIONS_STATUS_FILTERS : INBOUND_STATUS_FILTERS
+
   return (
     <div>
-      <PageHeader title="采购入库" titleTip={INBOUND_TITLE_TIP} />
+      <PageHeader
+        title="采购入库"
+        titleTip={INBOUND_TITLE_TIP}
+        desc={isOperations ? '仅显示已审核、可收货的单据' : undefined}
+      />
 
       <OrderListFilterToolbar
-        trailing={<PageCreateButton label="新建" onClick={() => navigate('/inbound/create')} />}
+        trailing={
+          shouldShowOrderCreate(mode) ? (
+            <PageCreateButton label="新建" onClick={() => navigate('/inbound/create')} />
+          ) : undefined
+        }
       >
         <OrderNoFilterField onSearch={setOrderNo} />
         <ListFilterField variant="corp">
@@ -89,7 +125,7 @@ export default function InboundIndex() {
             </SelectContent>
           </Select>
         </ListFilterField>
-        <OrderDateFilterField placeholder="入库日期" onChange={onDateRangeChange} />
+        <OrderDateFilterField placeholder="创建日期" onChange={onDateRangeChange} />
       </OrderListFilterToolbar>
 
       <OrderListStatusRow
@@ -104,7 +140,7 @@ export default function InboundIndex() {
       >
         <StatusFilterBar
           value={statusFilter}
-          options={INBOUND_STATUS_FILTERS}
+          options={statusOptions}
           onChange={setStatusFilter}
           counts={statusFilter === 'all' ? statusCounts : undefined}
         />
@@ -124,7 +160,15 @@ export default function InboundIndex() {
             key: 'status',
             title: '状态',
             tip: '当前所处流程节点',
-            render: (r) => <StatusBadge status={String(r.status)} compact />,
+            render: (r) => (
+              <InboundStatusBadge
+                order={{
+                  status: r.status,
+                  lines: (r.lines as Array<{ expectedQty: number; actualQty?: number | null }>) ?? [],
+                }}
+                compact
+              />
+            ),
           },
           {
             key: 'warehouse',
@@ -135,7 +179,7 @@ export default function InboundIndex() {
           { key: 'supplier', title: '供应商', tip: '物资供货方', render: (r) => (r.supplier as { name?: string })?.name ?? '—' },
           { key: 'contractNo', title: '合同号', tip: '关联采购合同编号', render: (r) => String(r.contractNo ?? '—') },
           { key: 'lines', title: '明细', tip: '入库物资行数', render: (r) => `${(r.lines as unknown[])?.length ?? 0} 项` },
-          { key: 'createdAt', title: '入库日期', tip: '单据业务日期', render: (r) => formatDate(String(r.orderDate ?? r.createdAt)) },
+          { key: 'createdAt', title: '创建日期', tip: '单据业务日期', render: (r) => formatDate(String(r.orderDate ?? r.createdAt)) },
           {
             key: 'action',
             title: '操作',
@@ -177,3 +221,4 @@ export default function InboundIndex() {
     </div>
   )
 }
+

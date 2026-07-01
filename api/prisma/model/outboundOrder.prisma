@@ -8,7 +8,12 @@ model OutboundOrder {
   purpose     String?
   destination String?
   recipient   String?
+  contact     String?
+  phone       String?
+  orderDate   DateTime       @default(now())
   rejectReason String?
+  plannedShipDate DateTime?
+  remark              String?
   createdById  String
   approvedById String?
   approvedAt   DateTime?

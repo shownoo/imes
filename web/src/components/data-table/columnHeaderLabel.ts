@@ -1,5 +1,6 @@
 import * as React from 'react'
 import type { Column, HeaderContext, Table } from '@tanstack/react-table'
+import { translate } from 'locales'
 
 export type ColumnLabelMeta = {
   displayName?: string
@@ -75,11 +76,11 @@ export function getColumnHeaderLabel<TData>(
   table?: Table<TData>,
 ): string {
   const meta = column.columnDef.meta as ColumnLabelMeta | undefined
-  if (meta?.displayName) return String(meta.displayName)
-  if (meta?.label) return String(meta.label)
+  if (meta?.displayName) return translate(String(meta.displayName))
+  if (meta?.label) return translate(String(meta.label))
 
   const fromHeader = renderHeaderLabel(column, table)
-  if (fromHeader) return fromHeader
+  if (fromHeader) return translate(fromHeader)
 
-  return column.id
+  return translate(column.id)
 }

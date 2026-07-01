@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -11,7 +12,7 @@ import {
   DocumentLinesSection,
 } from 'components/form-page'
 import { Button } from 'components/common'
-import { StatusBadge } from 'components/status-badge'
+import { InboundStatusBadge } from 'components/inbound-status-badge'
 import { QrLabelDialog } from 'components/qr-label-dialog'
 import type { QrLabelData } from 'components/qr-label'
 import { stockItemToLabel } from 'components/qr-label'
@@ -26,7 +27,11 @@ import { ReceiveSummaryPanel } from './receive-summary'
 import { PrintButton } from 'components/print-button'
 import { LEGAL_PRINT_TEMPLATE } from 'lib/print-keys'
 import { MessageAlert } from 'components/message-alert'
+import { CollabNotice } from 'components/collab-notice'
 import { formatDate } from 'lib/utils'
+import { useDocumentRealtime } from 'hooks/use-document-realtime'
+import { useMobileOpsUi } from 'hooks/use-mobile-ops-ui'
+import InboundMobileDetail from './mobile/detail'
 
 type PageMessage = {
   title: string
@@ -46,6 +51,15 @@ function lineReceivedBatches(line: Record<string, unknown>): ReceivedBatchRow[] 
 }
 
 export default function InboundDetail() {
+  const { t } = useTranslation()
+  const mobileOps = useMobileOpsUi()
+  if (mobileOps) return <InboundMobileDetail />
+
+  return <InboundDesktopDetail />
+}
+
+function InboundDesktopDetail() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -53,6 +67,7 @@ export default function InboundDetail() {
   const panelRef = useRef<HTMLDivElement>(null)
 
   const { data, refetch } = useQuery(GET_ORDER, { variables: { input: { id } }, skip: !id })
+  const { notice: collabNotice } = useDocumentRealtime('inbound', id, () => void refetch())
   const { data: approvalData } = useQuery(GET_APPROVAL, {
     variables: { bizType: 'inbound', bizId: id! },
     skip: !id || !data?.getInboundOrder,
@@ -110,15 +125,15 @@ export default function InboundDetail() {
     const pending = linePending(receiveLine)
     if (receiveForm.actualQty <= 0 || receiveForm.actualQty > pending) {
       showMessage({
-        title: '数量不正确',
+        title: t('数量不正确'),
         description: `实收数量须在 1～${pending.toLocaleString()} 之间。`,
       })
       return
     }
     if (!receiveForm.batchNo.trim()) {
       showMessage({
-        title: '请填写批次号',
-        description: '请录入外包装批次号，与送货单或标签保持一致。',
+        title: t('请填写批次号'),
+        description: t('请录入外包装批次号，与送货单或标签保持一致。'),
       })
       return
     }
@@ -163,7 +178,7 @@ export default function InboundDetail() {
       }
     } catch (e) {
       showMessage({
-        title: '收货失败',
+        title: t('收货失败'),
         description: e instanceof Error ? e.message : '操作失败，请稍后重试',
       })
     }
@@ -174,10 +189,10 @@ export default function InboundDetail() {
     const incomplete = orderLines.filter((line) => linePending(line) > 0)
     if (incomplete.length > 0) {
       showMessage({
-        title: '无法完成入库',
+        title: t('无法完成入库'),
         description: (
           <>
-            <p className="mb-2.5">以下明细尚未收齐，请先完成收货赋码：</p>
+            <p className="mb-2.5">{t('以下明细尚未收齐，请先完成收货赋码：')}</p>
             <ul className="divide-y divide-border/35 overflow-hidden rounded-lg border border-border/50 bg-muted/25">
               {incomplete.map((line) => {
                 const material = line.material as { name?: string; unit?: string }
@@ -202,7 +217,7 @@ export default function InboundDetail() {
       refetch()
     } catch (e) {
       showMessage({
-        title: '无法完成入库',
+        title: t('无法完成入库'),
         description: e instanceof Error ? e.message : '操作失败，请稍后重试',
       })
     }
@@ -235,7 +250,7 @@ export default function InboundDetail() {
     <DocumentPage
       title={String(order.orderNo ?? '')}
       backTo="/inbound"
-      backLabel="采购入库"
+      backLabel={t('采购入库')}
       wide
       footer={
         <>
@@ -257,45 +272,46 @@ export default function InboundDetail() {
         </>
       }
     >
+      <CollabNotice message={collabNotice} className="mb-4" />
       <GroupedFormStack>
-        <GroupedFormSection title="采购信息">
+        <GroupedFormSection title={t('采购信息')}>
           <GroupedFormRow>
-            <GroupedFormItem label="供应商">
+            <GroupedFormItem label={t('供应商')}>
               <GroupedFormReadonlyField>
                 {(order.supplier as { name?: string })?.name ?? '—'}
               </GroupedFormReadonlyField>
             </GroupedFormItem>
-            <GroupedFormItem label="采购合同号">
+            <GroupedFormItem label={t('采购合同号')}>
               <GroupedFormReadonlyField>{String(order.contractNo ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="联系人">
+            <GroupedFormItem label={t('联系人')}>
               <GroupedFormReadonlyField>{String(order.contact ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
-            <GroupedFormItem label="电话">
+            <GroupedFormItem label={t('电话')}>
               <GroupedFormReadonlyField>{String(order.phone ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="入库日期">
+            <GroupedFormItem label={t('创建日期')}>
               <GroupedFormReadonlyField>
                 {formatDate(String(order.orderDate ?? order.createdAt))}
               </GroupedFormReadonlyField>
             </GroupedFormItem>
-            <GroupedFormItem label="计划收货日期">
+            <GroupedFormItem label={t('计划收货日期')}>
               <GroupedFormReadonlyField>
                 {order.plannedReceiveDate ? formatDate(String(order.plannedReceiveDate)) : '—'}
               </GroupedFormReadonlyField>
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="收货仓库">
+            <GroupedFormItem label={t('收货仓库')}>
               <GroupedFormReadonlyField>{warehouseName ?? '—'}</GroupedFormReadonlyField>
             </GroupedFormItem>
-            <GroupedFormItem label="状态">
+            <GroupedFormItem label={t('状态')}>
               <GroupedFormReadonlyField className="border-0 bg-transparent px-1 shadow-none">
-                <StatusBadge status={String(order.status)} />
+                <InboundStatusBadge order={{ status: order.status, lines: orderLines as { expectedQty: number; actualQty?: number | null }[] }} />
               </GroupedFormReadonlyField>
             </GroupedFormItem>
           </GroupedFormRow>
@@ -305,7 +321,7 @@ export default function InboundDetail() {
         </GroupedFormSection>
 
         {approval?.flow?.graph && order.status !== 'DRAFT' && (
-          <GroupedFormSection title="审批流程">
+          <GroupedFormSection title={t('审批流程')}>
             <GroupedFormItem>
               <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
             </GroupedFormItem>
@@ -313,7 +329,7 @@ export default function InboundDetail() {
         )}
 
         <DocumentLinesSection
-          title="入库清单"
+          title={t('入库清单')}
           caption={linesTip}
           trailing={orderLines.length > 0 ? (
             <span className="text-xs tabular-nums text-muted-foreground">{orderLines.length} 行</span>
@@ -353,7 +369,7 @@ export default function InboundDetail() {
         open={labelOpen}
         onOpenChange={setLabelOpen}
         label={labelData}
-        description="收货赋码成功，请打印标签贴于物资外包装"
+        description={t('收货赋码成功，请打印标签贴于物资外包装')}
       />
 
       <MessageAlert

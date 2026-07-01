@@ -1,0 +1,43 @@
+/// 盘点任务
+model StocktakeTask {
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  id            String           @id @default(cuid())
+  taskNo        String           @unique
+  status        StocktakeStatus  @default(IN_PROGRESS)
+  title         String?
+  warehouseId   String?
+  shelfId       String?
+  zone          String?
+  createdById   String
+  completedAt   DateTime?
+  completedById String?
+
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+  shelf     Shelf?     @relation(fields: [shelfId], references: [id])
+  createdBy User       @relation("StocktakeCreator", fields: [createdById], references: [id])
+  completedBy User?    @relation("StocktakeCompleter", fields: [completedById], references: [id])
+  lines     StocktakeLine[]
+
+  @@index([status, createdAt(sort: Desc)])
+}
+
+/// 盘点明细（账面快照 + 实盘数量）
+model StocktakeLine {
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  taskId      String
+  stockItemId String
+  bookQty     Int
+  actualQty   Int?
+  countedAt   DateTime?
+  countedById String?
+
+  task      StocktakeTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stockItem StockItem     @relation(fields: [stockItemId], references: [id])
+  countedBy User?         @relation("StocktakeCounter", fields: [countedById], references: [id])
+
+  @@unique([taskId, stockItemId])
+  @@index([taskId])
+}

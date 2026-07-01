@@ -1,0 +1,10 @@
+{
+  "name": "static-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "license": "MIT",
+  "dependencies": {
+    "koa": "^2.14.2",
+    "koa-send": "^5.0.1"
+  }
+}

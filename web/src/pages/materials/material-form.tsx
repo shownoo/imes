@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -29,6 +30,7 @@ function imagesFromRecord(record: Record<string, unknown>): GalleryImage[] {
 }
 
 export default function MaterialForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -96,7 +98,7 @@ export default function MaterialForm() {
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="基本信息">
+        <GroupedFormSection title={t('基本信息')}>
           <GroupedFormRow>
             <GroupedFormItem label='物资编码' required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
@@ -118,7 +120,7 @@ export default function MaterialForm() {
           </GroupedFormItem>
         </GroupedFormSection>
 
-        <GroupedFormSection title="分类与供应">
+        <GroupedFormSection title={t('分类与供应')}>
           <GroupedFormRow>
             <GroupedFormItem label='物资大类' required extra='决定库区归属与效期规则'>
               <Select value={form.categoryId} onValueChange={(v) => setForm({ ...form, categoryId: v })}>
@@ -132,7 +134,7 @@ export default function MaterialForm() {
                 suppliers={suppliers}
                 value={form.supplierId}
                 onChange={(supplierId) => setForm({ ...form, supplierId })}
-                placeholder="无"
+                placeholder={t('无')}
                 className={groupedFormSelectTriggerClass}
               />
             </GroupedFormItem>

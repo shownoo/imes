@@ -59,7 +59,7 @@ function SectionHeader({
         type="button"
         onClick={onViewAll}
         className="text-[11px] font-medium text-primary hover:underline"
-      >全部</button>
+      >{'全部'}</button>
     </div>
   )
 }
@@ -91,11 +91,11 @@ export function NotificationCenter({
   const sidebarButton = (
     <button
       type="button"
-      aria-label="通知中心"
+      aria-label={'通知中心'}
       className={cn(sidebarFooterButtonClass(collapsed), 'relative w-full')}
     >
       <Bell className="size-4 shrink-0" strokeWidth={1.75} />
-      {!collapsed && <span className="flex-1 truncate text-left">通知</span>}
+      {!collapsed && <span className="flex-1 truncate text-left">{'通知'}</span>}
       {totalCount > 0 && (
         <span
           className={cn(
@@ -116,7 +116,7 @@ export function NotificationCenter({
       <TooltipTrigger asChild>
         <DropdownMenuTrigger asChild>{sidebarButton}</DropdownMenuTrigger>
       </TooltipTrigger>
-      <TooltipContent side="right">通知</TooltipContent>
+      <TooltipContent side="right">{'通知'}</TooltipContent>
     </Tooltip>
   ) : (
     <DropdownMenuTrigger asChild>{sidebarButton}</DropdownMenuTrigger>
@@ -130,7 +130,7 @@ export function NotificationCenter({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            aria-label="通知中心"
+            aria-label={'通知中心'}
             className="relative flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
           >
             <Bell className="size-4 text-muted-foreground" strokeWidth={2} />
@@ -148,7 +148,7 @@ export function NotificationCenter({
         className="w-[min(22rem,calc(100vw-2rem))] p-0"
       >
         <DropdownMenuLabel className="border-b px-3 py-2.5 font-normal">
-          <p className="text-sm font-medium">通知中心</p>
+          <p className="text-sm font-medium">{'通知中心'}</p>
           <p className="text-xs text-muted-foreground">
             {totalCount > 0 ? `${totalCount} 条未读` : '暂无新通知'}
           </p>
@@ -157,12 +157,12 @@ export function NotificationCenter({
         <div className="max-h-[min(60vh,420px)] overflow-y-auto py-1">
           <SectionHeader
             icon={ClipboardCheck}
-            title="待我审批"
+            title={'待我审批'}
             count={approvalCount}
             onViewAll={() => navigate('/tasks')}
           />
           {tasks.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">暂无待审批任务</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">{'暂无待审批任务'}</p>
           ) : (
             tasks.map((task) => (
               <DropdownMenuItem
@@ -186,12 +186,12 @@ export function NotificationCenter({
 
           <SectionHeader
             icon={AlertTriangle}
-            title="智能预警"
+            title={'智能预警'}
             count={alertCount}
             onViewAll={() => navigate('/alerts')}
           />
           {alerts.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">暂无未处理预警</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">{'暂无未处理预警'}</p>
           ) : (
             alerts.map((alert) => {
               const lv = ALERT_LEVEL[alert.level] ?? { label: alert.level, color: 'bg-muted' }

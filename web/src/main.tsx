@@ -6,6 +6,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { client } from './lib/apollo'
 import { ChetaVisualVariantProvider } from './contexts/cheta-visual-variant-context'
 import { WorkspaceProvider } from './contexts/workspace-context'
+import { WorkModeProvider } from './contexts/work-mode-context'
+import { DevicePreviewProvider } from './contexts/device-preview-context'
 import { LeaderSkinBridge } from './components/leader-skin-bridge'
 import App from './App'
 import './index.css'
@@ -16,8 +18,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <ChetaVisualVariantProvider>
           <WorkspaceProvider>
-            <LeaderSkinBridge />
-            <App />
+            <WorkModeProvider>
+              <DevicePreviewProvider>
+                <LeaderSkinBridge />
+                <App />
+              </DevicePreviewProvider>
+            </WorkModeProvider>
           </WorkspaceProvider>
         </ChetaVisualVariantProvider>
       </BrowserRouter>

@@ -1,18 +1,10 @@
-import * as React from 'react'
+import { useContext } from 'react'
+import { DevicePreviewContext } from 'contexts/device-preview-context'
+import { useViewportMobile } from 'hooks/use-viewport-mobile'
 
-const MOBILE_BREAKPOINT = 768
-
-/** shadcn/ui：<768px 视为移动端 */
+/** shadcn/ui：<768px 视为移动端；开启「手机端」预览时同样按移动端布局 */
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
-
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const apply = () => setIsMobile(mql.matches)
-    apply()
-    mql.addEventListener('change', apply)
-    return () => mql.removeEventListener('change', apply)
-  }, [])
-
-  return Boolean(isMobile)
+  const previewCtx = useContext(DevicePreviewContext)
+  const viewportMobile = useViewportMobile()
+  return Boolean(previewCtx?.mobilePreview || viewportMobile)
 }

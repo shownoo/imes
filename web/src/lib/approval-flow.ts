@@ -1,3 +1,4 @@
+import { translate } from 'locales'
 export type FlowNodeType = 'start' | 'approval' | 'end'
 
 export type FlowNodeData = {
@@ -33,9 +34,9 @@ export type FlowGraph = {
 export type NodeProgressState = 'done' | 'active' | 'pending'
 
 export const ROLE_OPTIONS = [
-  { value: 'SUPERVISOR', label: '仓储主管' },
-  { value: 'ADMIN', label: '系统管理员' },
-  { value: 'WAREHOUSE_KEEPER', label: '仓管员' },
+  { value: 'SUPERVISOR', label: translate('仓储主管') },
+  { value: 'ADMIN', label: translate('系统管理员') },
+  { value: 'WAREHOUSE_KEEPER', label: translate('仓管员') },
 ]
 
 export function canActOnAssignee(userRole: string, assigneeRole?: string | null) {
@@ -71,28 +72,28 @@ const NODE_TIMING = {
 export function emptyGraph(): FlowGraph {
   return {
     nodes: [
-      { id: 'start', type: 'start', position: { x: 40, y: 200 }, data: { label: '开始' } },
+      { id: 'start', type: 'start', position: { x: 40, y: 200 }, data: { label: translate('开始') } },
       {
         id: 'supervisor',
         type: 'approval',
         position: { x: 220, y: 200 },
-      data: { label: '主管审批', role: 'SUPERVISOR', mode: 'any', ...NODE_TIMING },
+      data: { label: translate('主管审批'), role: 'SUPERVISOR', mode: 'any', ...NODE_TIMING },
     },
     {
       id: 'admin',
       type: 'approval',
       position: { x: 420, y: 200 },
-      data: { label: '管理员复核', role: 'ADMIN', mode: 'any', ...NODE_TIMING },
+      data: { label: translate('管理员复核'), role: 'ADMIN', mode: 'any', ...NODE_TIMING },
       },
-      { id: 'end_ok', type: 'end', position: { x: 620, y: 120 }, data: { label: '通过', outcome: 'approved' } },
-      { id: 'end_no', type: 'end', position: { x: 620, y: 280 }, data: { label: '驳回', outcome: 'rejected' } },
+      { id: 'end_ok', type: 'end', position: { x: 620, y: 120 }, data: { label: translate('通过'), outcome: 'approved' } },
+      { id: 'end_no', type: 'end', position: { x: 620, y: 280 }, data: { label: translate('驳回'), outcome: 'rejected' } },
     ],
     edges: [
       { id: 'e1', source: 'start', target: 'supervisor' },
-      { id: 'e2', source: 'supervisor', target: 'admin', data: { label: '通过', action: 'approved' } },
-      { id: 'e3', source: 'supervisor', target: 'end_no', data: { label: '驳回', action: 'rejected' } },
-      { id: 'e4', source: 'admin', target: 'end_ok', data: { label: '通过', action: 'approved' } },
-      { id: 'e5', source: 'admin', target: 'end_no', data: { label: '驳回', action: 'rejected' } },
+      { id: 'e2', source: 'supervisor', target: 'admin', data: { label: translate('通过'), action: 'approved' } },
+      { id: 'e3', source: 'supervisor', target: 'end_no', data: { label: translate('驳回'), action: 'rejected' } },
+      { id: 'e4', source: 'admin', target: 'end_ok', data: { label: translate('通过'), action: 'approved' } },
+      { id: 'e5', source: 'admin', target: 'end_no', data: { label: translate('驳回'), action: 'rejected' } },
     ],
   }
 }
@@ -100,11 +101,11 @@ export function emptyGraph(): FlowGraph {
 export function inferEdgeData(_sourceId: string, targetId: string, nodes: FlowNode[]): FlowEdge['data'] {
   const target = nodes.find((n) => n.id === targetId)
   if (target?.type === 'end') {
-    if (target.data.outcome === 'rejected') return { label: '驳回', action: 'rejected' }
-    return { label: '通过', action: 'approved' }
+    if (target.data.outcome === 'rejected') return { label: translate('驳回'), action: 'rejected' }
+    return { label: translate('通过'), action: 'approved' }
   }
-  if (target?.type === 'approval') return { label: '通过', action: 'approved' }
-  return { label: '通过', action: 'approved' }
+  if (target?.type === 'approval') return { label: translate('通过'), action: 'approved' }
+  return { label: translate('通过'), action: 'approved' }
 }
 
 export function normalizeGraphEdges(graph: FlowGraph): FlowGraph {
@@ -171,7 +172,7 @@ export function flowToGraph(
       const label = e.data?.label ?? (typeof e.label === 'string' ? e.label : undefined)
       const action =
         e.data?.action ??
-        (label === '驳回' ? 'rejected' : label === '通过' ? 'approved' : undefined)
+        (label === translate('驳回') ? 'rejected' : label === translate('通过') ? 'approved' : undefined)
       return {
         id: e.id,
         source: e.source,

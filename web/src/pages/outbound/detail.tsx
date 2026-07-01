@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useLazyQuery } from '@apollo/client'
 import { Pencil } from 'lucide-react'
@@ -12,7 +13,7 @@ import {
   DocumentLinesSection,
 } from 'components/form-page'
 import { Button } from 'components/common'
-import { StatusBadge } from 'components/status-badge'
+import { OutboundStatusBadge } from 'components/outbound-status-badge'
 import { QrLabelDialog } from 'components/qr-label-dialog'
 import type { QrLabelData } from 'components/qr-label'
 import { SplitConfirmDialog, type SplitConfirmStock } from 'components/split-confirm-dialog'
@@ -21,9 +22,13 @@ import type { FlowGraph, NodeProgressState } from 'lib/approval-flow'
 import { canActOnAssignee } from 'lib/approval-flow'
 import { useAuth } from 'lib/auth'
 import { MessageAlert } from 'components/message-alert'
+import { CollabNotice } from 'components/collab-notice'
 import { PrintButton } from 'components/print-button'
+import { useDocumentRealtime } from 'hooks/use-document-realtime'
 import { LEGAL_PRINT_TEMPLATE } from 'lib/print-keys'
 import { formatDate } from 'lib/utils'
+import { useMobileOpsUi } from 'hooks/use-mobile-ops-ui'
+import OutboundMobileDetail from './mobile/detail'
 import { GET_ORDER, GET_PICK, GET_APPROVAL, TRACE_STOCK, SUBMIT, APPROVE, START_PICK, PICK, SHIP, COMPLETE } from './queries'
 import { PickLinesTable, linePendingPick } from './pick-lines-table'
 import { PickSummaryPanel } from './pick-summary'
@@ -43,6 +48,15 @@ function expiryLevelFromDate(expiryDate: string): string {
 }
 
 export default function OutboundDetail() {
+  const { t } = useTranslation()
+  const mobileOps = useMobileOpsUi()
+  if (mobileOps) return <OutboundMobileDetail />
+
+  return <OutboundDesktopDetail />
+}
+
+function OutboundDesktopDetail() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -59,6 +73,7 @@ export default function OutboundDetail() {
   const [pageMessage, setPageMessage] = useState<PageMessage | null>(null)
 
   const { data, refetch } = useQuery(GET_ORDER, { variables: { input: { id } }, skip: !id })
+  const { notice: collabNotice } = useDocumentRealtime('outbound', id, () => void refetch())
   const { data: approvalData } = useQuery(GET_APPROVAL, {
     variables: { bizType: 'outbound', bizId: id! },
     skip: !id || !data?.getOutboundOrder,
@@ -129,15 +144,15 @@ export default function OutboundDetail() {
       const { data: traceData } = await traceStock({ variables: { qrCode: trimmed } })
       const item = traceData?.traceMaterial as Record<string, unknown> | null | undefined
       if (!item) {
-        showMessage({ title: '未找到库存', description: '未找到该二维码对应的库存记录。' })
+        showMessage({ title: t('未找到库存'), description: '未找到该二维码对应的库存记录。' })
         return
       }
       if (item.status !== 'IN_STOCK') {
-        showMessage({ title: '无法拣货', description: '该物资不在库，无法拣货。' })
+        showMessage({ title: t('无法拣货'), description: '该物资不在库，无法拣货。' })
         return
       }
       if (String(item.materialId) !== String(pickLine.materialId)) {
-        showMessage({ title: '物资不匹配', description: '扫码物资与当前出库明细不一致。' })
+        showMessage({ title: t('物资不匹配'), description: '扫码物资与当前出库明细不一致。' })
         return
       }
 
@@ -162,7 +177,7 @@ export default function OutboundDetail() {
       setConfirmOpen(true)
     } catch (e) {
       showMessage({
-        title: '扫码失败',
+        title: t('扫码失败'),
         description: e instanceof Error ? e.message : '扫码核对失败，请重试',
       })
     }
@@ -191,12 +206,12 @@ export default function OutboundDetail() {
         setLabelData({
           qrCode: payload.newQrCode,
           title: material?.name ?? '应急物资',
-          subtitle: '拆零剩余',
+          subtitle: t('拆零剩余'),
           meta: [`数量 ${payload.remaining ?? payload.newStockItem?.quantity ?? ''}${material?.unit ?? ''}`],
         })
         setLabelOpen(true)
       } else if (payload?.message) {
-        showMessage({ title: '拣货提示', description: payload.message, tone: 'info' })
+        showMessage({ title: t('拣货提示'), description: payload.message, tone: 'info' })
       }
       setConfirmOpen(false)
       setConfirmStock(null)
@@ -211,7 +226,7 @@ export default function OutboundDetail() {
       }
     } catch (e) {
       showMessage({
-        title: '拣货失败',
+        title: t('拣货失败'),
         description: e instanceof Error ? e.message : '操作失败，请稍后重试',
       })
     }
@@ -222,10 +237,10 @@ export default function OutboundDetail() {
     const incomplete = orderLines.filter((line) => linePendingPick(line) > 0)
     if (incomplete.length > 0) {
       showMessage({
-        title: '无法确认出库',
+        title: t('无法确认出库'),
         description: (
           <>
-            <p className="mb-2.5">以下明细尚未拣齐，请先完成 FIFO 拣货：</p>
+            <p className="mb-2.5">{t('以下明细尚未拣齐，请先完成 FIFO 拣货：')}</p>
             <ul className="divide-y divide-border/35 overflow-hidden rounded-lg border border-border/50 bg-muted/25">
               {incomplete.map((line) => {
                 const material = line.material as { name?: string; unit?: string }
@@ -250,7 +265,7 @@ export default function OutboundDetail() {
       refetch()
     } catch (e) {
       showMessage({
-        title: '无法确认出库',
+        title: t('无法确认出库'),
         description: e instanceof Error ? e.message : '操作失败，请稍后重试',
       })
     }
@@ -264,7 +279,7 @@ export default function OutboundDetail() {
     <DocumentPage
       title={String(order.orderNo ?? '')}
       backTo="/outbound"
-      backLabel="出库管理"
+      backLabel={t('出库管理')}
       wide
       footer={
         <>
@@ -274,8 +289,7 @@ export default function OutboundDetail() {
           {order.status === 'DRAFT' && (
             <>
               <Button size="sm" variant="outline" onClick={() => navigate(`/outbound/${id}/edit`)}>
-                <Pencil className="size-3.5" />编辑
-              </Button>
+                <Pencil className="size-3.5" />{t('编辑')}</Button>
               <Button size="sm" onClick={async () => { await submitOrder({ variables: { input: { id } } }); refetch() }}>提交审核</Button>
             </>
           )}
@@ -292,52 +306,87 @@ export default function OutboundDetail() {
             <Button size="sm" onClick={() => void handleShip()}>确认出库</Button>
           )}
           {order.status === 'SHIPPED' && (
-            <Button size="sm" onClick={async () => { await completeOrder({ variables: { input: { id } } }); refetch() }}>完成单据</Button>
+            <Button size="sm" onClick={async () => { await completeOrder({ variables: { input: { id } } }); refetch() }}>完成出库</Button>
           )}
         </>
       }
     >
+      <CollabNotice message={collabNotice} className="mb-4" />
       <GroupedFormStack>
-        <GroupedFormSection title="出库信息">
+        <GroupedFormSection title={t('出库信息')}>
           <GroupedFormRow>
-            <GroupedFormItem label="用途">
+            <GroupedFormItem label={t('用途')}>
               <GroupedFormReadonlyField>{String(order.purpose ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
-            <GroupedFormItem label="目的地">
+            <GroupedFormItem label={t('领用人')}>
               <GroupedFormReadonlyField>{String(order.destination ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="领用人">
-              <GroupedFormReadonlyField>{String(order.recipient ?? '—')}</GroupedFormReadonlyField>
+            <GroupedFormItem label={t('联系人')}>
+              <GroupedFormReadonlyField>{String(order.contact ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
-            <GroupedFormItem label="创建时间">
-              <GroupedFormReadonlyField>{formatDate(String(order.createdAt))}</GroupedFormReadonlyField>
+            <GroupedFormItem label={t('电话')}>
+              <GroupedFormReadonlyField>{String(order.phone ?? '—')}</GroupedFormReadonlyField>
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="状态">
-              <GroupedFormReadonlyField className="border-0 bg-transparent px-1 shadow-none">
-                <StatusBadge status={String(order.status)} />
+            <GroupedFormItem label={t('创建日期')}>
+              <GroupedFormReadonlyField>
+                {formatDate(String(order.orderDate ?? order.createdAt))}
               </GroupedFormReadonlyField>
             </GroupedFormItem>
+            <GroupedFormItem label={t('计划发货日期')}>
+              <GroupedFormReadonlyField>
+                {order.plannedShipDate ? formatDate(String(order.plannedShipDate)) : '—'}
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label={t('状态')}>
+              <GroupedFormReadonlyField className="border-0 bg-transparent px-1 shadow-none">
+                <OutboundStatusBadge order={{ status: order.status, lines: orderLines as { requestedQty: number; pickedQty?: number | null }[] }} />
+              </GroupedFormReadonlyField>
+            </GroupedFormItem>
+          </GroupedFormRow>
+          {order.remark ? (
+            <GroupedFormItem label={t('备注')}>
+              <GroupedFormReadonlyField className="whitespace-pre-wrap">{String(order.remark)}</GroupedFormReadonlyField>
+            </GroupedFormItem>
+          ) : null}
+          <GroupedFormRow>
+            <GroupedFormItem label={t('创建时间')}>
+              <GroupedFormReadonlyField>{formatDate(String(order.createdAt))}</GroupedFormReadonlyField>
+            </GroupedFormItem>
             {order.rejectReason ? (
-              <GroupedFormItem label="驳回原因">
+              <GroupedFormItem label={t('驳回原因')}>
                 <GroupedFormReadonlyField>{String(order.rejectReason)}</GroupedFormReadonlyField>
               </GroupedFormItem>
             ) : (
-              <GroupedFormItem label="单号">
+              <GroupedFormItem label={t('单号')}>
                 <GroupedFormReadonlyField>{String(order.orderNo ?? '—')}</GroupedFormReadonlyField>
               </GroupedFormItem>
             )}
           </GroupedFormRow>
           {showPickSummary && (
-            <PickSummaryPanel lines={orderLines} picking={isPicking} embedded compact />
+            <PickSummaryPanel
+              lines={orderLines}
+              picking={isPicking}
+              phase={
+                order.status === 'COMPLETED'
+                  ? 'completed'
+                  : order.status === 'SHIPPED'
+                    ? 'shipped'
+                    : 'picking'
+              }
+              embedded
+              compact
+            />
           )}
         </GroupedFormSection>
 
         {approval?.flow?.graph && order.status !== 'DRAFT' && (
-          <GroupedFormSection title="审批流程">
+          <GroupedFormSection title={t('审批流程')}>
             <GroupedFormItem>
               <ApprovalFlowViewer graph={approval.flow.graph} progress={approval.progress} />
             </GroupedFormItem>
@@ -345,7 +394,7 @@ export default function OutboundDetail() {
         )}
 
         <DocumentLinesSection
-          title="出库清单"
+          title={t('出库清单')}
           caption={isPicking ? '按 FIFO 路线扫码拣货，拆零需确认数量' : undefined}
           trailing={orderLines.length > 0 ? (
             <span className="text-xs tabular-nums text-muted-foreground">{orderLines.length} 行</span>
@@ -399,7 +448,7 @@ export default function OutboundDetail() {
         open={labelOpen}
         onOpenChange={setLabelOpen}
         label={labelData}
-        description="拆零产生新库存单元，请打印标签贴于剩余物资"
+        description={t('拆零产生新库存单元，请打印标签贴于剩余物资')}
       />
 
       <MessageAlert

@@ -12,6 +12,9 @@ import {
   Settings,
 } from 'lucide-react'
 import { AppSidebar, type AppNavItem } from 'components/app-sidebar'
+import { MobileAppBar } from 'components/mobile-app-bar'
+import { MobilePreviewLayout } from 'components/mobile-preview-layout'
+import { MobilePreviewShell } from 'components/mobile-preview-shell'
 import { NotificationCenter } from 'components/notification-center'
 import { UserMenu } from 'components/settings-menu'
 import { WorkspacePageShell } from 'components/workspace-page-shell'
@@ -20,9 +23,18 @@ import { ApprovalInboxNavItem, ApprovalReminderBanner } from 'components/approva
 import { useApprovalDesktopNotify } from 'hooks/use-approval-desktop-notify'
 import { useAuth } from 'lib/auth'
 import { useWorkspace } from 'contexts/workspace-context'
+import { useWorkMode } from 'contexts/work-mode-context'
+import { useDevicePreview } from 'contexts/device-preview-context'
+import { useMobileEmbed } from 'hooks/use-mobile-embed'
+import {
+  canAccessAdminInMode,
+  filterNavByWorkMode,
+  shouldShowApprovalInbox,
+} from 'lib/work-mode'
 import { topNavLinkClass } from 'lib/nav-styles'
 import { SidebarInset, SidebarProvider } from 'components/ui/sidebar'
 import { TooltipProvider } from 'components/ui/tooltip'
+import { useIsMobile } from 'hooks/use-mobile'
 import { cn } from 'lib/utils'
 
 const NAV: AppNavItem[] = [
@@ -54,7 +66,15 @@ function Brand() {
   )
 }
 
-function AppNavLinks({ items, tasksActive }: { items: AppNavItem[]; tasksActive: boolean }) {
+function AppNavLinks({
+  items,
+  tasksActive,
+  showApprovalInbox,
+}: {
+  items: AppNavItem[]
+  tasksActive: boolean
+  showApprovalInbox: boolean
+}) {
   const { t } = useTranslation()
   const location = useLocation()
   const linkClass = (active: boolean) => topNavLinkClass(active)
@@ -73,7 +93,7 @@ function AppNavLinks({ items, tasksActive }: { items: AppNavItem[]; tasksActive:
           </NavLink>
         )
       })}
-      <ApprovalInboxNavItem className={linkClass(tasksActive)} compact />
+      {showApprovalInbox && <ApprovalInboxNavItem className={linkClass(tasksActive)} compact />}
     </>
   )
 }
@@ -105,7 +125,13 @@ function MainContent({ inset }: { inset?: boolean }) {
   )
 }
 
-function TopLayout({ navItems }: { navItems: AppNavItem[] }) {
+function TopLayout({
+  navItems,
+  showApprovalInbox,
+}: {
+  navItems: AppNavItem[]
+  showApprovalInbox: boolean
+}) {
   const location = useLocation()
   const tasksActive = location.pathname.startsWith('/tasks')
 
@@ -115,7 +141,7 @@ function TopLayout({ navItems }: { navItems: AppNavItem[] }) {
         <div className="flex h-14 w-full items-center gap-3 px-4 lg:gap-4 lg:px-6">
           <Brand />
           <nav className="flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <AppNavLinks items={navItems} tasksActive={tasksActive} />
+            <AppNavLinks items={navItems} tasksActive={tasksActive} showApprovalInbox={showApprovalInbox} />
           </nav>
           <HeaderActions />
         </div>
@@ -125,14 +151,22 @@ function TopLayout({ navItems }: { navItems: AppNavItem[] }) {
   )
 }
 
-function LeftLayout({ navItems }: { navItems: AppNavItem[] }) {
+function LeftLayout({
+  navItems,
+  showApprovalInbox,
+}: {
+  navItems: AppNavItem[]
+  showApprovalInbox: boolean
+}) {
+  const isMobile = useIsMobile()
+
   return (
     <SidebarProvider
       className="flex h-svh max-h-svh w-full overflow-hidden"
       style={{ background: 'var(--leader-page-bg, hsl(var(--background)))' }}
     >
       <div className="flex h-svh max-h-svh w-full overflow-hidden" data-cheta-layout data-imes-nav-mode="left">
-        <AppSidebar navItems={navItems} />
+        <AppSidebar navItems={navItems} showApprovalInbox={showApprovalInbox} />
         <SidebarInset className="flex min-h-0 min-w-0 flex-1 flex-col bg-transparent py-2 pl-1 pr-2 md:py-3 md:pl-1.5 md:pr-3">
           <div
             className={cn(
@@ -145,6 +179,7 @@ function LeftLayout({ navItems }: { navItems: AppNavItem[] }) {
                 'var(--leader-card-shadow, 0 1px 2px rgba(15,23,42,0.04), 0 8px 32px -8px rgba(15,23,42,0.12))',
             }}
           >
+            {isMobile && <MobileAppBar />}
             <MainContent inset />
           </div>
         </SidebarInset>
@@ -154,19 +189,34 @@ function LeftLayout({ navItems }: { navItems: AppNavItem[] }) {
 }
 
 export default function Layout() {
-  const { canManageSystem } = useAuth()
+  const { user, canManageSystem } = useAuth()
+  const { mode } = useWorkMode()
+  const { mobilePreview, inPhonePreview } = useDevicePreview()
+  const isEmbed = useMobileEmbed()
   const { prefs } = useWorkspace()
   useApprovalDesktopNotify()
-  const navItems = canManageSystem ? [...NAV, ...ADMIN_NAV] : NAV
+  const showApprovalInbox = shouldShowApprovalInbox(mode)
+  const baseNav = filterNavByWorkMode(NAV, mode)
+  const navItems = canAccessAdminInMode(mode, user) && canManageSystem
+    ? [...baseNav, ...ADMIN_NAV]
+    : baseNav
+  const navLayout = mobilePreview ? 'left' : prefs.navLayout
+  const useMobileLayout = mobilePreview && (!inPhonePreview || isEmbed)
+
+  const layoutBody = useMobileLayout ? (
+    <MobilePreviewLayout showApprovalInbox={showApprovalInbox} />
+  ) : navLayout === 'left' ? (
+    <LeftLayout navItems={navItems} showApprovalInbox={showApprovalInbox} />
+  ) : (
+    <TopLayout navItems={navItems} showApprovalInbox={showApprovalInbox} />
+  )
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <AuthSession />
-      {prefs.navLayout === 'left' ? (
-        <LeftLayout navItems={navItems} />
-      ) : (
-        <TopLayout navItems={navItems} />
-      )}
-    </TooltipProvider>
+    <MobilePreviewShell>
+      <TooltipProvider delayDuration={300}>
+        <AuthSession />
+        {layoutBody}
+      </TooltipProvider>
+    </MobilePreviewShell>
   )
 }

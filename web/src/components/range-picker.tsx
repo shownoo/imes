@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   format as fnsFormat,
   subDays,
@@ -44,6 +45,7 @@ const fmt = (d: Date) => fnsFormat(d, 'yyyy-MM-dd')
 const fmtDisplay = (d: Date) => fnsFormat(d, 'yyyy/MM/dd')
 
 export function RangePicker({ onChange, className, placeholder = '创建日期' }: RangePickerProps) {
+  const { t } = useTranslation()
   const [date, setDate] = useState<DateRange | undefined>()
   const [open, setOpen] = useState(false)
   const [activePreset, setActivePreset] = useState<string | null>(null)
@@ -188,9 +190,7 @@ export function RangePicker({ onChange, className, placeholder = '创建日期' 
                   type="button"
                   className="mt-1 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                   onClick={clear}
-                >
-                  清除
-                </button>
+                >{'清除'}</button>
               ) : null}
             </aside>
             <Calendar
@@ -218,5 +218,6 @@ export function RangePicker({ onChange, className, placeholder = '创建日期' 
 }
 
 export function toDateTimeStart(date: string) {
+  const { t } = useTranslation()
   return `${date}T00:00:00.000`
 }

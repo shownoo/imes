@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'c
 import { GET_WAREHOUSES, GET_SHELVES, ADD_SHELF } from './queries'
 
 export default function ShelfForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -79,7 +81,7 @@ export default function ShelfForm() {
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="货位信息">
+        <GroupedFormSection title={t('货位信息')}>
           <GroupedFormRow>
             <GroupedFormItem label='货位编码' required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />

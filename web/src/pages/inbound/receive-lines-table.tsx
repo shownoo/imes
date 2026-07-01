@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ActionLink } from 'components/action-link'
 import {
   AppleTableFrame,
@@ -13,22 +14,26 @@ import { cn } from 'lib/utils'
 type InboundLine = Record<string, unknown>
 
 function linePending(line: InboundLine) {
+  const { t } = useTranslation()
   return Math.max(0, Number(line.expectedQty) - Number(line.actualQty ?? 0))
 }
 
 function lineStockItems(line: InboundLine) {
+  const { t } = useTranslation()
   return (line.stockItems as Array<Record<string, unknown>>) ?? []
 }
 
 function stockBatchNo(item: Record<string, unknown>) {
+  const { t } = useTranslation()
   return (item.batch as { batchNo?: string } | undefined)?.batchNo
 }
 
 function stockShelfCode(item: Record<string, unknown>) {
+  const { t } = useTranslation()
   return (item.shelf as { code?: string } | undefined)?.code
 }
 
-const emptyCell = <span className="text-[15px] text-muted-foreground/35">—</span>
+const emptyCell = <span className="text-sm text-muted-foreground/40">—</span>
 
 export function ReceiveLinesTable({
   lines,
@@ -50,25 +55,23 @@ export function ReceiveLinesTable({
       <table className={imesDataTableClass}>
         <thead>
           <tr className="border-b border-border/25">
-            <th className={cn(appleTableHeadClass, 'text-left')}>物资</th>
-            <th className={appleTableHeadClass}>厂牌</th>
-            <th className={appleTableHeadClass}>编码</th>
-            <th className={appleTableHeadClass}>规格</th>
-            <th className={cn(appleTableHeadClass, 'w-12')}>单位</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>预计</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>实收</th>
-            <th className={appleTableHeadClass}>差异</th>
-            <th className={appleTableHeadClass}>批次</th>
-            <th className={appleTableHeadClass}>货位</th>
-            <th className={cn(appleTableHeadClass, 'text-right')}>操作</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'物资'}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'厂牌'}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'编码'}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'规格'}</th>
+            <th className={cn(appleTableHeadClass, 'w-12 text-center')}>{'单位'}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{'预计'}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{'实收'}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'差异'}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'批次'}</th>
+            <th className={cn(appleTableHeadClass, 'text-left')}>{'货位'}</th>
+            <th className={cn(appleTableHeadClass, 'text-right')}>{'操作'}</th>
           </tr>
         </thead>
         <tbody>
           {lines.length === 0 ? (
             <tr>
-              <td colSpan={11} className="px-5 py-14 text-center text-[15px] text-muted-foreground">
-                暂无明细
-              </td>
+              <td colSpan={11} className="px-5 py-14 text-center text-sm text-muted-foreground">{'暂无明细'}</td>
             </tr>
           ) : (
             lines.map((line) => {
@@ -102,33 +105,33 @@ export function ReceiveLinesTable({
                       active ? 'border-l-primary' : 'border-l-transparent',
                     )}
                   >
-                    <span className="text-[15px] font-medium leading-snug text-foreground">
+                    <span className="text-sm font-medium leading-snug text-foreground">
                       {material?.name ?? '—'}
                     </span>
                   </td>
-                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-[13px] text-muted-foreground')}>
+                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-muted-foreground')}>
                     {line.manufacturer ? String(line.manufacturer) : emptyCell}
                   </td>
                   <td className={appleTableCellClass}>
                     {material?.code
-                      ? <TableCodeCell className="text-[13px] font-normal text-muted-foreground">{material.code}</TableCodeCell>
+                      ? <TableCodeCell>{material.code}</TableCodeCell>
                       : emptyCell}
                   </td>
-                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-[13px] text-muted-foreground')}>
+                  <td className={cn(appleTableCellClass, 'max-w-[7rem] truncate text-muted-foreground')}>
                     {material?.spec ?? emptyCell}
                   </td>
-                  <td className={cn(appleTableCellClass, 'text-[13px] text-muted-foreground')}>
+                  <td className={cn(appleTableCellClass, 'text-center text-muted-foreground')}>
                     {material?.unit ?? emptyCell}
                   </td>
                   <td className={cn(appleTableCellClass, 'text-right')}>
-                    <span className="font-number text-[15px] font-semibold tabular-nums tracking-tight text-foreground">
+                    <span className="font-number text-sm font-semibold tabular-nums tracking-tight text-foreground">
                       {expectedQty.toLocaleString()}
                     </span>
                   </td>
                   <td className={cn(appleTableCellClass, 'text-right')}>
                     <span
                       className={cn(
-                        'font-number text-[15px] tabular-nums tracking-tight',
+                        'font-number text-sm tabular-nums tracking-tight',
                         fullyReceived
                           ? 'font-semibold text-emerald-600'
                           : actualQty > 0
@@ -148,16 +151,16 @@ export function ReceiveLinesTable({
                         {stockItems.map((item, i) => {
                           const batchNo = stockBatchNo(item)
                           return batchNo ? (
-                            <TableCodeCell key={String(item.id ?? i)} className="text-[13px] font-normal text-muted-foreground">
+                            <TableCodeCell key={String(item.id ?? i)} className="text-muted-foreground">
                               {batchNo}
                             </TableCodeCell>
                           ) : (
-                            <span key={String(item.id ?? i)} className="text-[13px] text-muted-foreground/35">—</span>
+                            <span key={String(item.id ?? i)} className="text-sm text-muted-foreground/40">—</span>
                           )
                         })}
                       </div>
                     ) : line.batchNo ? (
-                      <TableCodeCell className="text-[13px] font-normal text-muted-foreground">{String(line.batchNo)}</TableCodeCell>
+                      <TableCodeCell className="text-muted-foreground">{String(line.batchNo)}</TableCodeCell>
                     ) : (
                       emptyCell
                     )}
@@ -168,16 +171,14 @@ export function ReceiveLinesTable({
                         {stockItems.map((item, i) => {
                           const shelfCode = stockShelfCode(item)
                           return shelfCode ? (
-                            <TableCodeCell key={String(item.id ?? i)} className="text-[13px] font-normal text-muted-foreground">
+                            <TableCodeCell key={String(item.id ?? i)} className="text-muted-foreground">
                               {shelfCode}
                             </TableCodeCell>
                           ) : (
                             <span
                               key={String(item.id ?? i)}
-                              className="inline-flex w-fit rounded-full bg-orange-500/12 px-2 py-0.5 text-[11px] font-medium text-orange-600"
-                            >
-                              未上架
-                            </span>
+                              className="inline-flex w-fit rounded-full bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-600"
+                            >{'未上架'}</span>
                           )
                         })}
                       </div>
@@ -188,7 +189,8 @@ export function ReceiveLinesTable({
                       <div className="flex flex-col items-end gap-0.5">
                         {canReceive && (
                           <ActionLink
-                            className={cn('text-[15px] font-normal', active && 'font-semibold')}
+                            variant="pill"
+                            className={cn(active && 'bg-primary/[0.14] font-semibold')}
                             onClick={() => onReceive(line)}
                           >
                             {active ? '收货中…' : pending < expectedQty ? '继续收货' : '收货赋码'}
@@ -197,7 +199,7 @@ export function ReceiveLinesTable({
                         {stockItems.length > 0 && onReprint && stockItems.map((item, i) => (
                           <ActionLink
                             key={String(item.id ?? i)}
-                            className="text-[13px] font-normal text-muted-foreground"
+                            className="text-xs text-muted-foreground"
                             onClick={() => onReprint(line, item)}
                           >
                             {stockItems.length > 1 ? `补打 · ${stockBatchNo(item) ?? i + 1}` : '补打标签'}

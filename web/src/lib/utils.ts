@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { translate } from 'locales'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -31,6 +32,19 @@ export const ALERT_LEVEL: Record<string, { label: string; color: string }> = {
   GREEN: { label: '安全', color: 'bg-emerald-500' },
   YELLOW: { label: '临期', color: 'bg-amber-400' },
   RED: { label: '预警', color: 'bg-red-500' },
+}
+
+export function getInboundTypeLabel(type: string): string {
+  return translate(INBOUND_TYPE_LABELS[type] ?? type)
+}
+
+export function getZoneLabel(zone: string): string {
+  return translate(ZONE_LABELS[zone] ?? zone)
+}
+
+export function getAlertLevelLabel(level: string): string {
+  const item = ALERT_LEVEL[level]
+  return item ? translate(item.label) : level
 }
 
 export function formatDate(d: string | Date) {

@@ -1,5 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
-import { Users, ShieldCheck, ScrollText, GitBranch, Bell, HardDrive, Printer } from 'lucide-react'
+import { Users, ShieldCheck, ScrollText, GitBranch, Bell, HardDrive, Printer, Building2 } from 'lucide-react'
 import { PageHeader } from 'components/common'
 import { SectionNav } from 'components/section-menu'
 import { useAuth } from 'lib/auth'
@@ -13,6 +13,7 @@ import NotifySettingsPage from './notify/index'
 import UploadSettingsPage from './upload/index'
 import PrintTemplatesPage from './print-templates/index'
 import PrintTemplateEditPage from './print-templates/edit'
+import DeploySettingsPage from './deploy/index'
 
 const ADMIN_NAV = [
   { to: '/admin/users', icon: Users, label: '账号管理', perm: 'system:user:read' },
@@ -21,6 +22,7 @@ const ADMIN_NAV = [
   { to: '/admin/workflows', icon: GitBranch, label: '审批流程', perm: 'system:role:read' },
   { to: '/admin/notify', icon: Bell, label: '通知配置', perm: 'system:role:read' },
   { to: '/admin/upload', icon: HardDrive, label: '文件存储', perm: 'system:role:read' },
+  { to: '/admin/deploy', icon: Building2, label: '部署信息', perm: 'system:role:write' },
   { to: '/admin/print-templates', icon: Printer, label: '打印模板', perm: 'system:role:read' },
 ]
 
@@ -60,6 +62,7 @@ export default function AdminRoutes() {
           <Route path="workflows" element={<WorkflowsIndex />} />
           <Route path="notify" element={<NotifySettingsPage />} />
           <Route path="upload" element={<UploadSettingsPage />} />
+          <Route path="deploy" element={<DeploySettingsPage />} />
           <Route path="print-templates" element={<PrintTemplatesPage />} />
           <Route path="print-templates/:key" element={<PrintTemplateEditPage />} />
         </Route>

@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react'
 import { PageHeader, DataTable, Button, Card, CardContent, PageActionButton, TABLE_KEYS } from 'components/common'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { formatDate, ALERT_LEVEL } from 'lib/utils'
+import { useTranslation } from 'react-i18next'
 
 const GET_ALERTS = gql`query GetAlerts($resolved: Boolean, $take: Int) { getAlerts(resolved: $resolved, take: $take) }`
 const SYNC = gql`mutation SyncAlerts { syncAlerts }`
@@ -17,6 +18,7 @@ const LEVEL_TIPS: Record<string, string> = {
 }
 
 export default function Alerts() {
+  const { t } = useTranslation()
   const { data, loading, refetch } = useQuery(GET_ALERTS, { variables: { resolved: false, take: 50 } })
   const [sync, { loading: syncing }] = useMutation(SYNC, { onCompleted: () => refetch() })
   const [resolve] = useMutation(RESOLVE, { onCompleted: () => refetch() })
@@ -26,18 +28,16 @@ export default function Alerts() {
   return (
     <div>
       <PageHeader
-        title="智能预警"
+        title={t('智能预警')}
         action={
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
                 <PageActionButton onClick={() => sync()} disabled={syncing}>
-                  <RefreshCw className={`size-3.5 ${syncing ? 'animate-spin' : ''}`} />
-                  同步预警
-                </PageActionButton>
+                  <RefreshCw className={`size-3.5 ${syncing ? 'animate-spin' : ''}`} />{t('同步预警')}</PageActionButton>
               </span>
             </TooltipTrigger>
-            <TooltipContent side="bottom">重新扫描库存，生成最新效期与水位预警</TooltipContent>
+            <TooltipContent side="bottom">{t('重新扫描库存，生成最新效期与水位预警')}</TooltipContent>
           </Tooltip>
         }
       />
@@ -68,20 +68,20 @@ export default function Alerts() {
       </div>
 
       <DataTable tableKey={TABLE_KEYS.ALERTS} loading={loading} columns={[
-        { key: 'level', title: '级别', tip: '效期红绿灯：绿安全 / 黄临期 / 红预警', render: (r) => {
+        { key: 'level', title: t('级别'), tip: '效期红绿灯：绿安全 / 黄临期 / 红预警', render: (r) => {
           const lv = ALERT_LEVEL[String(r.level)] ?? { label: String(r.level), color: 'bg-muted' }
           return <span className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${lv.color}`} />{lv.label}</span>
         }},
-        { key: 'type', title: '类型', tip: '预警类型：效期、低库存或高库存', render: (r) => TYPE_LABELS[String(r.type)] ?? String(r.type) },
-        { key: 'message', title: '预警内容', tip: '具体预警描述' },
-        { key: 'material', title: '物资', tip: '触发预警的物资', render: (r) => (r.material as { name?: string })?.name ?? '—' },
-        { key: 'createdAt', title: '时间', tip: '预警生成时间', render: (r) => formatDate(String(r.createdAt)) },
-        { key: 'action', title: '操作', render: (r) => (
+        { key: 'type', title: t('类型'), tip: '预警类型：效期、低库存或高库存', render: (r) => TYPE_LABELS[String(r.type)] ?? String(r.type) },
+        { key: 'message', title: t('预警内容'), tip: '具体预警描述' },
+        { key: 'material', title: t('物资'), tip: '触发预警的物资', render: (r) => (r.material as { name?: string })?.name ?? '—' },
+        { key: 'createdAt', title: t('时间'), tip: '预警生成时间', render: (r) => formatDate(String(r.createdAt)) },
+        { key: 'action', title: t('操作'), render: (r) => (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 text-gold" onClick={() => resolve({ variables: { id: r.id } })}>标记已处理</Button>
             </TooltipTrigger>
-            <TooltipContent>确认已关注并处理该预警</TooltipContent>
+            <TooltipContent>{t('确认已关注并处理该预警')}</TooltipContent>
           </Tooltip>
         )},
       ]} rows={alerts} />

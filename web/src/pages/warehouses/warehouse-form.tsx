@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'c
 import { GET_WAREHOUSES, ADD_WAREHOUSE, ZONE_OPTIONS } from './queries'
 
 export default function WarehouseForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -70,7 +72,7 @@ export default function WarehouseForm() {
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="仓库信息">
+        <GroupedFormSection title={t('仓库信息')}>
           <GroupedFormRow>
             <GroupedFormItem label='仓库编码' required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />

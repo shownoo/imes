@@ -3,6 +3,7 @@ import { FileImage, FileText, Loader2 } from 'lucide-react'
 import { ToolbarButton } from 'components/common'
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/ui/tooltip'
 import { cn } from 'lib/utils'
+import { useTranslation } from 'react-i18next'
 
 const IMPORT_TIPS = {
   pdf: '上传电子版 PDF，自动提取文字并识别物资与数量',
@@ -48,6 +49,7 @@ export function InboundImportActions({
   /** block：独立一行；inline：与添加行同排 */
   layout?: 'block' | 'inline'
 }) {
+  const { t } = useTranslation()
   const [dragOver, setDragOver] = useState(false)
   const dragDepth = useRef(0)
 
@@ -117,9 +119,7 @@ export function InboundImportActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <ToolbarButton disabled={isParsing} onClick={() => pickFile('.png,.jpg,.jpeg,.webp,image/*', onImportImage)}>
-              <FileImage className="size-3.5" />
-              图片
-            </ToolbarButton>
+              <FileImage className="size-3.5" />{t('图片')}</ToolbarButton>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-[14rem] leading-relaxed">
             {IMPORT_TIPS.image}
@@ -137,7 +137,7 @@ export function InboundImportActions({
           {isParsing && <Loader2 className="size-3 shrink-0 animate-spin" />}
           <span className="truncate">{statusText}</span>
           {parseError && (
-            <button type="button" className="shrink-0 underline-offset-2 hover:underline" onClick={onDismissError}>关闭</button>
+            <button type="button" className="shrink-0 underline-offset-2 hover:underline" onClick={onDismissError}>{t('关闭')}</button>
           )}
         </p>
       )}

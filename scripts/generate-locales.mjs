@@ -5,7 +5,7 @@
 import fs from 'fs'
 import path from 'path'
 
-const stringsPath = '/tmp/imes-strings.json'
+const stringsPath = path.resolve('scripts/.i18n-strings.json')
 const outDir = path.resolve('web/src/locales')
 
 const EXTRA = [

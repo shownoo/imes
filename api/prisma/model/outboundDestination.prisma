@@ -7,6 +7,8 @@ model OutboundDestination {
   city      String   @default("武汉市")
   district  String
   name      String
+  contact   String?
+  phone     String?
   sortOrder Int      @default(0)
   enabled   Boolean  @default(true)
 

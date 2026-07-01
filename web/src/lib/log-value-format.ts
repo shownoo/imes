@@ -1,3 +1,4 @@
+import { translate } from 'locales'
 import { LOG_FIELD_LABELS } from 'lib/system-log-labels'
 
 const INTERNAL_OBJECT_KEYS = new Set([
@@ -28,7 +29,7 @@ function formatEntityLabel(obj: Record<string, unknown>): string | null {
 
 export function formatLogDisplayValue(value: unknown, depth = 0): string {
   if (value === null || value === undefined || value === '') return '—'
-  if (typeof value === 'boolean') return value ? '启用' : '停用'
+  if (typeof value === 'boolean') return value ? translate('启用') : translate('停用')
   if (typeof value === 'number' || typeof value === 'bigint') return String(value)
   if (typeof value === 'string') {
     if (value.startsWith('{') || value.startsWith('[')) {

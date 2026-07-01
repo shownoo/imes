@@ -12,6 +12,10 @@
     "db:seed:required": "pnpm -C api db:seed:required",
     "db:seed:demo": "pnpm -C api db:seed:demo",
     "prisma:g": "pnpm -C api prisma:g",
-    "i18n:generate": "node scripts/generate-locales.mjs"
+    "i18n:extract": "node scripts/extract-i18n-strings.mjs",
+    "i18n:codemod": "node scripts/i18n-codemod.mjs",
+    "i18n:codemod:ts": "node scripts/i18n-ts-codemod.mjs",
+    "i18n:generate": "node scripts/generate-locales.mjs",
+    "i18n": "pnpm i18n:extract && pnpm i18n:codemod && pnpm i18n:codemod:ts && pnpm i18n:generate"
   }
 }

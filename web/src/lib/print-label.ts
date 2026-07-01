@@ -1,8 +1,9 @@
+import { translate } from 'locales'
 /** 打开打印窗口，仅渲染标签 HTML */
-export function printLabelHtml(bodyHtml: string, title = '打印标签') {
+export function printLabelHtml(bodyHtml: string, title = translate('打印标签')) {
   const win = window.open('', '_blank', 'noopener,noreferrer')
   if (!win) {
-    alert('无法打开打印窗口，请允许弹出窗口后重试')
+    alert(translate('无法打开打印窗口，请允许弹出窗口后重试'))
     return
   }
   win.document.write(`<!DOCTYPE html>

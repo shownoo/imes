@@ -30,6 +30,8 @@ async function resetDemoData(prisma: PrismaClient) {
   await prisma.approvalInstance.deleteMany()
   await prisma.systemLog.deleteMany()
   await prisma.stockMovement.deleteMany()
+  await prisma.stocktakeLine.deleteMany()
+  await prisma.stocktakeTask.deleteMany()
   await prisma.alert.deleteMany()
   await prisma.outboundOrderLine.deleteMany()
   await prisma.outboundOrder.deleteMany()
@@ -479,7 +481,7 @@ export async function seedDemo(
     {
       orderNo: 'OUT20260629009',
       status: 'SHIPPED',
-      purpose: '已完成拣货待结案',
+      purpose: '防汛应急物资调拨',
       destination: '硚口区应急保障局',
       recipient: '硚口区民政局',
       lines: [{ materialIdx: 4, requestedQty: 300, pickedQty: 300 }],
@@ -658,6 +660,37 @@ export async function seedDemo(
   ]
   for (const log of demoLogs) {
     await prisma.systemLog.create({ data: log })
+  }
+
+  const demoShelf = shelves[0]
+  const demoStockItems = await prisma.stockItem.findMany({
+    where: { shelfId: demoShelf?.id, status: 'IN_STOCK' },
+    take: 5,
+  })
+  if (demoShelf && demoStockItems.length >= 2) {
+    await prisma.stocktakeTask.create({
+      data: {
+        taskNo: 'PD20260630001',
+        title: `货位 ${demoShelf.code} 盘点`,
+        status: 'IN_PROGRESS',
+        warehouseId: demoShelf.warehouseId,
+        shelfId: demoShelf.id,
+        createdById: keeper.id,
+        lines: {
+          create: demoStockItems.map((item, idx) => ({
+            stockItemId: item.id,
+            bookQty: item.quantity,
+            ...(idx === 0
+              ? {
+                  actualQty: item.quantity,
+                  countedAt: addDays(now, -1),
+                  countedById: keeper.id,
+                }
+              : {}),
+          })),
+        },
+      },
+    })
   }
 
   return {

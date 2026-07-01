@@ -4,6 +4,7 @@ import { Button } from 'components/common'
 import { Input } from 'components/ui/input'
 import { cn, formatDate } from 'lib/utils'
 import { parseLocalDateStr } from 'components/inline-date-picker'
+import { useTranslation } from 'react-i18next'
 
 export type ReceiveCodingForm = {
   actualQty: number
@@ -56,9 +57,11 @@ export function ReceiveCodingPanel({
   submitting,
   className,
 }: ReceiveCodingPanelProps) {
+  const { t } = useTranslation()
   const expiry = shelfLifeMonths ? addMonths(value.productionDate, shelfLifeMonths) : null
   const qtyInvalid = value.actualQty <= 0 || value.actualQty > pendingQty
   const multiBatch = receivedBatches.length > 0 || (expectedQty != null && expectedQty > pendingQty)
+  const isMobile = Boolean(className?.includes('mobile-receive-form'))
 
   return (
     <div
@@ -67,7 +70,12 @@ export function ReceiveCodingPanel({
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-3 border-b border-border/40 px-3.5 py-2.5">
+      <div
+        className={cn(
+          'flex items-start justify-between gap-3 border-b border-border/40 px-3.5 py-2.5',
+          isMobile && 'hidden',
+        )}
+      >
         <div className="min-w-0">
           <h3 className="truncate text-[15px] font-semibold tracking-tight">
             收货赋码 · {materialName}
@@ -76,25 +84,25 @@ export function ReceiveCodingPanel({
             {multiBatch ? '可分多批收货，每批独立批次号与二维码' : '录入批次效期，系统自动生成二维码'}
           </p>
         </div>
-        <Button variant="ghost" size="sm" className="shrink-0" onClick={onCancel}>
-          取消
-        </Button>
+        <Button variant="ghost" size="sm" className="shrink-0" onClick={onCancel}>{t('取消')}</Button>
       </div>
 
-      <div className="space-y-4 px-3.5 py-3">
+      <div className={cn('space-y-4 px-3.5 py-3', isMobile && 'pt-1')}>
+        {isMobile && (
+          <p className="text-[13px] leading-snug text-muted-foreground">
+            {multiBatch ? '可分多批收货，每批独立批次号与二维码' : '录入批次效期，系统自动生成二维码'}
+          </p>
+        )}
         {expectedQty != null && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
-            <span>
-              预计 <span className="font-number font-semibold tabular-nums">{expectedQty.toLocaleString()}</span>
+            <span>{t('预计')}<span className="font-number font-semibold tabular-nums">{expectedQty.toLocaleString()}</span>
               {unit ? ` ${unit}` : ''}
             </span>
             <span className="text-muted-foreground/35">·</span>
-            <span>
-              已收 <span className="font-number font-medium tabular-nums text-foreground">{receivedQty.toLocaleString()}</span>
+            <span>{t('已收')}<span className="font-number font-medium tabular-nums text-foreground">{receivedQty.toLocaleString()}</span>
             </span>
             <span className="text-muted-foreground/35">·</span>
-            <span className="text-orange-600">
-              待收 <span className="font-number font-semibold tabular-nums">{pendingQty.toLocaleString()}</span>
+            <span className="text-orange-600">{t('待收')}<span className="font-number font-semibold tabular-nums">{pendingQty.toLocaleString()}</span>
             </span>
           </div>
         )}
@@ -133,7 +141,7 @@ export function ReceiveCodingPanel({
             {unit ? ` ${unit}` : ''}
             ；确认后生成唯一二维码并弹出打印标签。
             {multiBatch && pendingQty > value.actualQty && (
-              <> 打码完成后可继续录入下一批次，直至本行收齐。</>
+              <>{t('打码完成后可继续录入下一批次，直至本行收齐。')}</>
             )}
             {expiry && (
               <>
@@ -146,7 +154,7 @@ export function ReceiveCodingPanel({
         </div>
 
         <div className="grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <FormField label="本批数量" required>
+          <FormField label={t('本批数量')} required>
             <Input
               type="number"
               min={1}
@@ -159,16 +167,16 @@ export function ReceiveCodingPanel({
               <p className="text-xs text-destructive">数量须在 1～{pendingQty.toLocaleString()} 之间</p>
             )}
           </FormField>
-          <FormField label="生产批次号" required>
+          <FormField label={t('生产批次号')} required>
             <Input
               className={groupedFormInputClass}
               value={value.batchNo}
-              placeholder="录入外包装批次号"
+              placeholder={t('录入外包装批次号')}
               onChange={(e) => onChange({ ...value, batchNo: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground">与送货单或外包装标签保持一致</p>
+            <p className="text-xs text-muted-foreground">{t('与送货单或外包装标签保持一致')}</p>
           </FormField>
-          <FormField label="生产日期" required className="sm:col-span-2 lg:col-span-1">
+          <FormField label={t('生产日期')} required className="sm:col-span-2 lg:col-span-1">
             <DatePicker
               value={value.productionDate}
               onChange={(v) => onChange({ ...value, productionDate: v ?? '' })}
@@ -176,14 +184,30 @@ export function ReceiveCodingPanel({
           </FormField>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-1">
-          <Button
-            className="h-9 px-5"
-            disabled={submitting || !value.batchNo.trim() || !value.productionDate || qtyInvalid}
-            onClick={onSubmit}
-          >
-            {submitting ? '处理中…' : multiBatch ? '确认本批并打码' : '确认收货并打码'}
-          </Button>
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-3 pt-1',
+            isMobile && 'sticky bottom-0 -mx-3.5 border-t border-border/30 bg-background/95 px-3.5 py-3 backdrop-blur-sm',
+          )}
+        >
+          {isMobile ? (
+            <button
+              type="button"
+              className="mobile-ops-btn w-full"
+              disabled={submitting || !value.batchNo.trim() || !value.productionDate || qtyInvalid}
+              onClick={onSubmit}
+            >
+              {submitting ? '处理中…' : multiBatch ? '确认本批并打码' : '确认收货并打码'}
+            </button>
+          ) : (
+            <Button
+              className="h-9 px-5"
+              disabled={submitting || !value.batchNo.trim() || !value.productionDate || qtyInvalid}
+              onClick={onSubmit}
+            >
+              {submitting ? '处理中…' : multiBatch ? '确认本批并打码' : '确认收货并打码'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

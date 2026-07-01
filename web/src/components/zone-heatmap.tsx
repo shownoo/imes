@@ -1,4 +1,5 @@
 import { cn, formatNumber, STORAGE_ZONE_LABELS } from 'lib/utils'
+import { useTranslation } from 'react-i18next'
 
 type ZoneItem = { zone: string; label: string; quantity: number; capacity?: number }
 
@@ -32,6 +33,7 @@ function occupancyPct(item: ZoneItem): number {
 
 /** 占用率 → 热力色阶（蓝 → 金 → 橙） */
 function heatBarFill(occupancy: number, hasCapacity: boolean) {
+  const { t } = useTranslation()
   const heat = hasCapacity ? occupancy : Math.min(100, occupancy || 40)
   const goldAt = Math.min(92, 35 + heat * 0.55)
   const tail = heat >= 80 ? '#f97316' : heat >= 55 ? 'hsl(var(--gold))' : 'color-mix(in srgb, hsl(var(--gold)) 70%, hsl(var(--primary)))'
@@ -46,6 +48,7 @@ function heatBarFill(occupancy: number, hasCapacity: boolean) {
 }
 
 function heatGlow(occupancy: number, hasCapacity: boolean) {
+  const { t } = useTranslation()
   const heat = hasCapacity ? occupancy : 25
   return {
     cardBg: `linear-gradient(155deg, color-mix(in srgb, var(--leader-accent) ${Math.min(heat * 0.18, 14)}%, var(--leader-card-bg)) 0%, var(--leader-card-bg) 62%)`,
@@ -55,6 +58,7 @@ function heatGlow(occupancy: number, hasCapacity: boolean) {
 }
 
 function ZoneHeatCell({ item, maxQty }: { item: ZoneItem; maxQty: number }) {
+  const { t } = useTranslation()
   const hasCapacity = Boolean(item.capacity && item.capacity > 0)
   const occupancy = occupancyPct(item)
   const barWidth = barWidthPct(item, maxQty)
@@ -140,6 +144,7 @@ export function ZoneHeatmap({
 }: {
   data: Array<ZoneItem> | Record<string, number>
 }) {
+  const { t } = useTranslation()
   const items = normalizeItems(data)
   const maxQty = Math.max(...items.map((i) => i.quantity), 1)
 
@@ -154,7 +159,7 @@ export function ZoneHeatmap({
         className="mt-4 flex items-center justify-between gap-3 text-[10px]"
         style={{ color: 'var(--leader-text-muted)' }}
       >
-        <span>占用率热力</span>
+        <span>{t('占用率热力')}</span>
         <div className="flex flex-1 items-center justify-end gap-2">
           <span>低</span>
           <div

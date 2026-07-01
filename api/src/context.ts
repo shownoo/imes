@@ -15,13 +15,27 @@ function resolveClientIp(request: Request): string | null {
   return request.headers.get('x-real-ip')
 }
 
-export async function createContext(initialContext: YogaInitialContext): Promise<Context> {
-  const authorization = initialContext.request.headers.get('authorization') ?? undefined
+export async function createContextFromRequest(request: Request): Promise<Context> {
+  const authorization = request.headers.get('authorization') ?? undefined
   const identity = await resolveIdentity(authorization)
   return {
     prisma,
     identity,
     isAuthenticated: identity !== null,
-    clientIp: resolveClientIp(initialContext.request),
+    clientIp: resolveClientIp(request),
   }
+}
+
+export async function createContext(initialContext: YogaInitialContext): Promise<Context> {
+  return createContextFromRequest(initialContext.request)
+}
+
+export async function createWsContext(connectionParams?: Record<string, unknown>): Promise<Context> {
+  const raw = connectionParams?.authorization
+  const authorization = typeof raw === 'string' ? raw : undefined
+  return createContextFromRequest(
+    new Request('http://imes.internal/graphql', {
+      headers: authorization ? { authorization } : {},
+    }),
+  )
 }

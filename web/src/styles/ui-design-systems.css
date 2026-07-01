@@ -182,6 +182,7 @@ body[data-ui-design-system='apple-hig'] .leader-surface-flat.overview-card {
 body[data-ui-design-system='apple-hig'] .imes-data-table thead th {
   border-bottom-color: color-mix(in srgb, hsl(var(--border)) 45%, transparent);
   font-weight: 500;
+  letter-spacing: 0;
 }
 
 body[data-ui-design-system='apple-hig'] .imes-data-table tbody tr {

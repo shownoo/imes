@@ -1,4 +1,6 @@
-export const LOG_MODULE_LABELS: Record<string, string> = {
+import { translate } from 'locales'
+
+const LOG_MODULE_ZH: Record<string, string> = {
   AUTH: '认证',
   USER: '用户',
   ROLE: '角色',
@@ -14,7 +16,14 @@ export const LOG_MODULE_LABELS: Record<string, string> = {
   ALERT: '预警',
 }
 
-export const LOG_ACTION_LABELS: Record<string, string> = {
+/** @deprecated prefer getLogModuleLabel() */
+export const LOG_MODULE_LABELS: Record<string, string> = LOG_MODULE_ZH
+
+export function getLogModuleLabel(key: string): string {
+  return translate(LOG_MODULE_ZH[key] ?? key)
+}
+
+const LOG_ACTION_ZH: Record<string, string> = {
   LOGIN: '登录',
   CREATE: '创建',
   UPDATE: '更新',
@@ -31,7 +40,14 @@ export const LOG_ACTION_LABELS: Record<string, string> = {
   RESOLVE: '处理',
 }
 
-export const LOG_FIELD_LABELS: Record<string, string> = {
+/** @deprecated prefer getLogActionLabel() */
+export const LOG_ACTION_LABELS: Record<string, string> = LOG_ACTION_ZH
+
+export function getLogActionLabel(key: string): string {
+  return translate(LOG_ACTION_ZH[key] ?? key)
+}
+
+const LOG_FIELD_ZH: Record<string, string> = {
   username: '用户名',
   name: '姓名',
   phone: '电话',
@@ -61,10 +77,12 @@ export const LOG_FIELD_LABELS: Record<string, string> = {
   contractNo: '合同号',
   remark: '备注',
   purpose: '用途',
-  destination: '目的地',
+  destination: '领用人',
   city: '所属市',
   district: '所属区',
   recipient: '领用人',
+  orderDate: '创建日期',
+  plannedShipDate: '计划发货日期',
   rejectReason: '驳回原因',
   status: '状态',
   type: '类型',
@@ -78,5 +96,12 @@ export const LOG_FIELD_LABELS: Record<string, string> = {
   images: '图片',
 }
 
-export const LOG_MODULES = Object.keys(LOG_MODULE_LABELS)
-export const LOG_ACTIONS = Object.keys(LOG_ACTION_LABELS)
+/** @deprecated prefer getLogFieldLabel() */
+export const LOG_FIELD_LABELS: Record<string, string> = LOG_FIELD_ZH
+
+export function getLogFieldLabel(key: string): string {
+  return translate(LOG_FIELD_ZH[key] ?? key)
+}
+
+export const LOG_MODULES = Object.keys(LOG_MODULE_ZH)
+export const LOG_ACTIONS = Object.keys(LOG_ACTION_ZH)

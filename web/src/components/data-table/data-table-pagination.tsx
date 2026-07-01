@@ -1,4 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ChevronLeft,
   ChevronRight,
@@ -41,6 +42,7 @@ export function DataTablePagination({
   actionsBeforeRefresh,
   className,
 }: DataTablePaginationProps) {
+  const { t } = useTranslation()
   const totalPages = Math.max(1, Math.ceil(total / pageSize) || 1)
 
   return (
@@ -56,7 +58,7 @@ export function DataTablePagination({
 
       <div className="flex items-center gap-2.5">
         <div className="flex items-center gap-1.5">
-          <span className="hidden text-xs text-muted-foreground lg:inline">每页</span>
+          <span className="hidden text-xs text-muted-foreground lg:inline">{t('每页')}</span>
           <Select
             value={String(pageSize)}
             disabled={disabled}
@@ -88,7 +90,7 @@ export function DataTablePagination({
             disabled={disabled || current <= 1}
             onClick={() => onChange?.(1, pageSize)}
           >
-            <span className="sr-only">首页</span>
+            <span className="sr-only">{t('首页')}</span>
             <ChevronsLeft className="size-3.5" />
           </Button>
           <Button
@@ -99,7 +101,7 @@ export function DataTablePagination({
             disabled={disabled || current <= 1}
             onClick={() => onChange?.(current - 1, pageSize)}
           >
-            <span className="sr-only">上一页</span>
+            <span className="sr-only">{t('上一页')}</span>
             <ChevronLeft className="size-3.5" />
           </Button>
           <Button
@@ -110,7 +112,7 @@ export function DataTablePagination({
             disabled={disabled || current >= totalPages}
             onClick={() => onChange?.(current + 1, pageSize)}
           >
-            <span className="sr-only">下一页</span>
+            <span className="sr-only">{t('下一页')}</span>
             <ChevronRight className="size-3.5" />
           </Button>
           <Button
@@ -121,7 +123,7 @@ export function DataTablePagination({
             disabled={disabled || current >= totalPages}
             onClick={() => onChange?.(totalPages, pageSize)}
           >
-            <span className="sr-only">末页</span>
+            <span className="sr-only">{t('末页')}</span>
             <ChevronsRight className="size-3.5" />
           </Button>
         </div>
@@ -136,14 +138,14 @@ export function DataTablePagination({
                 variant="outline"
                 size="icon"
                 className="size-7"
-                aria-label="刷新"
+                aria-label={t('刷新')}
                 disabled={disabled}
                 onClick={handleRefresh}
               >
                 <RefreshCw className="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top">刷新</TooltipContent>
+            <TooltipContent side="top">{t('刷新')}</TooltipContent>
           </Tooltip>
         ) : null}
       </div>

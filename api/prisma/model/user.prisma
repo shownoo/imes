@@ -21,4 +21,7 @@ model User {
   alertsResolved        Alert[]         @relation("AlertResolver")
   systemLogs            SystemLog[]
   approvalTasksActed    ApprovalTask[] @relation("ApprovalTaskActor")
+  stocktakesCreated     StocktakeTask[] @relation("StocktakeCreator")
+  stocktakesCompleted   StocktakeTask[] @relation("StocktakeCompleter")
+  stocktakeLinesCounted StocktakeLine[] @relation("StocktakeCounter")
 }

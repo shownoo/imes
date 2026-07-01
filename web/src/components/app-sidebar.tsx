@@ -91,6 +91,7 @@ function NavMenuItem({
 }
 
 function TasksNavItem() {
+  const { t } = useTranslation()
   const location = useLocation()
   const { state } = useSidebar()
   const collapsed = state === 'collapsed'
@@ -103,12 +104,12 @@ function TasksNavItem() {
       <SidebarMenuButton
         asChild
         isActive={active}
-        tooltip="待办中心"
+        tooltip={t('待办中心')}
         className={navMenuButtonClass(active, collapsed)}
       >
         <NavLink to="/tasks">
           <ClipboardCheck className="size-[15px] shrink-0" strokeWidth={1.75} />
-          <span className="truncate">待办中心</span>
+          <span className="truncate">{t('待办中心')}</span>
         </NavLink>
       </SidebarMenuButton>
       {count > 0 && (
@@ -120,7 +121,13 @@ function TasksNavItem() {
   )
 }
 
-export function AppSidebar({ navItems }: { navItems: AppNavItem[] }) {
+export function AppSidebar({
+  navItems,
+  showApprovalInbox = true,
+}: {
+  navItems: AppNavItem[]
+  showApprovalInbox?: boolean
+}) {
   const { t } = useTranslation()
   const { state } = useSidebar()
   const collapsed = state === 'collapsed'
@@ -145,7 +152,7 @@ export function AppSidebar({ navItems }: { navItems: AppNavItem[] }) {
           {navItems.map(({ to, icon, labelKey }) => (
             <NavMenuItem key={to} to={to} icon={icon} label={t(labelKey)} end={to === '/'} />
           ))}
-          <TasksNavItem />
+          {showApprovalInbox && <TasksNavItem />}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="mt-auto shrink-0 px-1.5 pb-2 pt-1">

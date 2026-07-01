@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -27,6 +28,7 @@ import { useInboundDocumentImport } from './use-inbound-document-import'
 const emptyLine = (): InboundLineRow => ({ materialId: '', expectedQty: 1, manufacturer: '' })
 
 export default function InboundCreate() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [warehouseId, setWarehouseId] = useState('')
   const warehouseTouched = useRef(false)
@@ -146,7 +148,7 @@ export default function InboundCreate() {
     <FormPage
       mode="create"
       backTo="/inbound"
-      backLabel="采购入库"
+      backLabel={t('采购入库')}
       wide
       onSubmit={handleCreate}
       onCancel={() => navigate('/inbound')}
@@ -158,57 +160,57 @@ export default function InboundCreate() {
       )}
 
       <GroupedFormStack>
-        <GroupedFormSection title="采购信息">
+        <GroupedFormSection title={t('采购信息')}>
           <GroupedFormRow>
-            <GroupedFormItem label="供应商" required>
+            <GroupedFormItem label={t('供应商')} required>
               <SupplierSearchSelect
                 suppliers={suppliers}
                 value={supplierId}
                 onChange={setSupplierId}
-                placeholder="请选择"
+                placeholder={t('请选择')}
                 className={groupedFormSelectTriggerClass}
               />
             </GroupedFormItem>
-            <GroupedFormItem label="采购合同号">
+            <GroupedFormItem label={t('采购合同号')}>
               <Input
                 className={groupedFormInputClass}
                 value={contractNo}
                 onChange={(e) => setContractNo(e.target.value)}
-                placeholder="选填"
+                placeholder={t('选填')}
               />
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="联系人">
+            <GroupedFormItem label={t('联系人')}>
               <Input
                 className={groupedFormInputClass}
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                placeholder="选填"
+                placeholder={t('选填')}
               />
             </GroupedFormItem>
-            <GroupedFormItem label="电话">
+            <GroupedFormItem label={t('电话')}>
               <Input
                 className={groupedFormInputClass}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="选填"
+                placeholder={t('选填')}
               />
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="入库日期" required>
+            <GroupedFormItem label={t('创建日期')} required>
               <InlineDatePicker value={orderDate} onChange={(v) => v && setOrderDate(v)} />
             </GroupedFormItem>
-            <GroupedFormItem label="计划收货日期">
+            <GroupedFormItem label={t('计划收货日期')}>
               <InlineDatePicker
                 value={plannedReceiveDate || undefined}
                 onChange={(v) => setPlannedReceiveDate(v ?? '')}
-                placeholder="选填"
+                placeholder={t('选填')}
               />
             </GroupedFormItem>
           </GroupedFormRow>
-          <GroupedFormItem label="收货仓库" required>
+          <GroupedFormItem label={t('收货仓库')} required>
             <Select
               value={warehouseId || undefined}
               onValueChange={(v) => {
@@ -217,7 +219,7 @@ export default function InboundCreate() {
               }}
             >
               <SelectTrigger className={groupedFormSelectTriggerClass}>
-                <SelectValue placeholder="请选择" />
+                <SelectValue placeholder={t('请选择')} />
               </SelectTrigger>
               <SelectContent>
                 {warehouses.map((w) => (
@@ -231,7 +233,7 @@ export default function InboundCreate() {
         <GroupedFormRemark
           value={remark}
           onChange={setRemark}
-          placeholder="选填"
+          placeholder={t('选填')}
         />
 
         <InboundLinesEditor

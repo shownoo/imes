@@ -52,7 +52,7 @@ export function OrderNoFilterField({ onSearch }: { onSearch: (value: string) => 
   return (
     <ListFilterField variant="oddNbr">
       <DebounceInput
-        placeholder="单号"
+        placeholder={'单号'}
         className={listFilterInputClass}
         debounceTime={500}
         onSearch={onSearch}

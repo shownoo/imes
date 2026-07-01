@@ -1,3 +1,5 @@
+import { translate } from 'locales'
+
 const ERROR_MESSAGES: Record<string, string> = {
   'upload.disabled': '文件上传未启用',
   'upload.noApiUrl': '未配置 API 地址',
@@ -9,16 +11,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   Unauthorized: '未授权，请重新登录',
 }
 
-export function formatApiError(raw: string, fallback = '操作失败，请稍后重试'): string {
+const DEFAULT_FALLBACK = '操作失败，请稍后重试'
+
+export function formatApiError(raw: string, fallback = DEFAULT_FALLBACK): string {
   const trimmed = raw.trim()
-  if (!trimmed) return fallback
-  if (ERROR_MESSAGES[trimmed]) return ERROR_MESSAGES[trimmed]
+  if (!trimmed) return translate(fallback)
+  if (ERROR_MESSAGES[trimmed]) return translate(ERROR_MESSAGES[trimmed])
 
   if (trimmed.includes('Unique constraint failed')) {
-    return '该文件已存在，请勿重复上传'
+    return translate('该文件已存在，请勿重复上传')
   }
   if (trimmed.includes('Unauthorized')) {
-    return ERROR_MESSAGES.Unauthorized
+    return translate(ERROR_MESSAGES.Unauthorized)
   }
 
   const lines = trimmed
@@ -29,5 +33,5 @@ export function formatApiError(raw: string, fallback = '操作失败，请稍后
   const concise = lines.find((line) => line.length <= 120 && !line.includes('ctx.prisma'))
   if (concise) return concise
 
-  return fallback
+  return translate(fallback)
 }

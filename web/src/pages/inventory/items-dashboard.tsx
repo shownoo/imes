@@ -3,6 +3,7 @@ import { Card, CardContent, ExpiryBar } from 'components/common'
 import { Skeleton } from 'components/ui/skeleton'
 import { formatNumber } from 'lib/utils'
 import { InventoryStatTile } from './stat-tile'
+import { useTranslation } from 'react-i18next'
 
 export type StockItemStats = {
   totalUnits: number
@@ -22,6 +23,7 @@ export function InventoryItemsDashboard({
   stats?: StockItemStats
   loading?: boolean
 }) {
+  const { t } = useTranslation()
   if (loading) {
     return (
       <div className="mb-6 space-y-4">
@@ -43,27 +45,27 @@ export function InventoryItemsDashboard({
     <div className="mb-6 space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <InventoryStatTile
-          label="库存单元"
+          label={t('库存单元')}
           value={formatNumber(totalUnits)}
           unit="个"
           hint={`${stats?.materialKinds ?? 0} 种物资`}
           icon={Package}
         />
         <InventoryStatTile
-          label="在库数量"
+          label={t('在库数量')}
           value={formatNumber(stats?.totalQty ?? 0)}
           hint={`在库 ${inStock} 个单元`}
           icon={Boxes}
         />
         <InventoryStatTile
-          label="已上架"
+          label={t('已上架')}
           value={stats?.shelved ?? 0}
           unit="个"
           hint={`未上架 ${stats?.unshelved ?? 0} 个`}
           icon={MapPin}
         />
         <InventoryStatTile
-          label="效期关注"
+          label={t('效期关注')}
           value={stats?.expiryAlert ?? 0}
           unit="个"
           hint={`预警 ${expiry.red} · 临期 ${expiry.yellow}`}
@@ -74,7 +76,7 @@ export function InventoryItemsDashboard({
       <Card>
         <CardContent className="space-y-3 pt-5">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">效期分布</p>
+            <p className="text-sm font-medium">{t('效期分布')}</p>
             <p className="text-xs text-muted-foreground">
               在库 {inStock} 个 · 在途 {stats?.status.IN_TRANSIT ?? 0} 个
             </p>

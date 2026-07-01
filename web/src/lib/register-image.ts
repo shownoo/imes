@@ -1,3 +1,4 @@
+import { translate } from 'locales'
 import { getApiBaseUrl } from 'lib/api-base'
 import { formatApiError } from 'lib/api-error'
 import { uploadFileLocal } from 'lib/upload'
@@ -54,7 +55,7 @@ export async function uploadAndRegisterImage(file: File): Promise<RegisteredImag
   const body = await res.json().catch(() => ({}))
   if (!res.ok || body.errors?.length) {
     const msg = body.errors?.[0]?.message ?? 'register.failed'
-    throw new Error(formatApiError(msg, '文件登记失败'))
+    throw new Error(formatApiError(msg, translate('文件登记失败')))
   }
 
   const fileItem = body.data?.registerFile as RegisteredImage | undefined

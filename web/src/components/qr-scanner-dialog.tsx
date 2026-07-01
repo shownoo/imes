@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import { Camera, CameraOff } from 'lucide-react'
 import { Button } from 'components/ui/button'
@@ -23,6 +24,7 @@ export function QrScannerDialog({
   onScan,
   title = '扫描二维码',
 }: QrScannerDialogProps) {
+  const { t } = useTranslation()
   const videoRef = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<IScannerControls | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -85,14 +87,14 @@ export function QrScannerDialog({
       <DialogContent className="max-w-sm gap-4 p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>将二维码置于取景框中央，识别成功后自动填入</DialogDescription>
+          <DialogDescription>{t('将二维码置于取景框中央，识别成功后自动填入')}</DialogDescription>
         </DialogHeader>
 
         <div className="relative mx-6 aspect-square overflow-hidden rounded-lg bg-black">
           <video ref={videoRef} className="size-full object-cover" muted playsInline />
           <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
           {starting && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm text-white">正在启动摄像头…</div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm text-white">{t('正在启动摄像头…')}</div>
           )}
         </div>
 
@@ -106,7 +108,7 @@ export function QrScannerDialog({
         <div className="flex justify-end gap-2 border-t px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            <Camera className="size-4" />手动输入</Button>
+            <Camera className="size-4" />{t('手动输入')}</Button>
         </div>
       </DialogContent>
     </Dialog>

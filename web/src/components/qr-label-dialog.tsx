@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Printer } from 'lucide-react'
 import { QrLabel, type QrLabelData } from 'components/qr-label'
 import { Button } from 'components/ui/button'
@@ -20,6 +21,7 @@ type QrLabelDialogProps = {
 }
 
 export function QrLabelDialog({ open, onOpenChange, label, description }: QrLabelDialogProps) {
+  const { t } = useTranslation()
   const printRef = useRef<HTMLDivElement>(null)
 
   if (!label) return null
@@ -33,7 +35,7 @@ export function QrLabelDialog({ open, onOpenChange, label, description }: QrLabe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>打印标签</DialogTitle>
+          <DialogTitle>{'打印标签'}</DialogTitle>
           <DialogDescription>{description ?? '确认信息后打印并贴于物资或货位'}</DialogDescription>
         </DialogHeader>
 
@@ -47,7 +49,7 @@ export function QrLabelDialog({ open, onOpenChange, label, description }: QrLabe
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>关闭</Button>
           <Button onClick={handlePrint}>
-            <Printer className="size-4" />打印</Button>
+            <Printer className="size-4" />{'打印'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -64,6 +66,6 @@ export function QrPrintButton({
 }) {
   return (
     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onOpen(label)}>
-      <Printer className="size-3" />打码</Button>
+      <Printer className="size-3" />{'打码'}</Button>
   )
 }

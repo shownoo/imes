@@ -55,6 +55,7 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  forceMobile,
   className,
   style,
   children,
@@ -63,8 +64,11 @@ function SidebarProvider({
   defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** 强制按移动端布局（手机预览 / 真机） */
+  forceMobile?: boolean
 }) {
-  const isMobile = useIsMobile()
+  const detectedMobile = useIsMobile()
+  const isMobile = forceMobile ?? detectedMobile
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.

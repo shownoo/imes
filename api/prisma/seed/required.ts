@@ -37,6 +37,11 @@ export async function seedRequired(prisma: PrismaClient): Promise<RequiredSeedRe
     create: { key: 'org_city', value: { city: '武汉市' } },
     update: {},
   })
+  await prisma.systemSetting.upsert({
+    where: { key: 'org_licensee' },
+    create: { key: 'org_licensee', value: { name: '武汉市应急物资保障中心' } },
+    update: {},
+  })
 
   for (const def of REQUIRED_OUTBOUND_PURPOSES) {
     await prisma.outboundPurpose.upsert({
@@ -54,6 +59,8 @@ export async function seedRequired(prisma: PrismaClient): Promise<RequiredSeedRe
         city: def.city,
         district: def.district,
         name: def.name,
+        contact: def.contact,
+        phone: def.phone,
         sortOrder: def.sortOrder,
         enabled: true,
       },

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@apollo/client'
 import {
@@ -17,10 +18,11 @@ import { defaultDestinationName } from 'lib/destination-name'
 import { GET_OUTBOUND_DESTINATIONS, ADD_OUTBOUND_DESTINATION, GET_ORG_CITY } from './queries'
 
 export default function OutboundDestinationForm() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
-  const [form, setForm] = useState({ code: '', city: '', district: '', name: '', sortOrder: 0, enabled: 'true' })
+  const [form, setForm] = useState({ code: '', city: '', district: '', name: '', contact: '', phone: '', sortOrder: 0, enabled: 'true' })
   const [nameTouched, setNameTouched] = useState(false)
 
   const { data: orgData } = useQuery(GET_ORG_CITY)
@@ -44,6 +46,8 @@ export default function OutboundDestinationForm() {
         city: String(record.city ?? orgCity),
         district: String(record.district ?? ''),
         name: String(record.name),
+        contact: String(record.contact ?? ''),
+        phone: String(record.phone ?? ''),
         sortOrder: Number(record.sortOrder ?? 0),
         enabled: record.enabled === false ? 'false' : 'true',
       })
@@ -87,7 +91,7 @@ export default function OutboundDestinationForm() {
 
   const handleSave = async () => {
     if (!form.district.trim()) {
-      alert('请选择所属区')
+      alert(t('请选择所属区'))
       return
     }
     try {
@@ -99,6 +103,8 @@ export default function OutboundDestinationForm() {
             city: form.city || orgCity,
             district: form.district,
             name: form.name || defaultDestinationName(form.district),
+            contact: form.contact || undefined,
+            phone: form.phone || undefined,
             sortOrder: form.sortOrder,
             enabled: form.enabled === 'true',
           },
@@ -116,23 +122,23 @@ export default function OutboundDestinationForm() {
     <FormPage
       mode={isEdit ? 'edit' : 'create'}
       backTo="/materials?tab=destinations"
-      backLabel="出库目的地"
+      backLabel={t('出库目的地')}
       onSubmit={handleSave}
       onCancel={() => navigate('/materials?tab=destinations')}
       submitLoading={saving}
     >
       <GroupedFormStack>
-        <GroupedFormSection title="目的地信息">
+        <GroupedFormSection title={t('目的地信息')}>
           <GroupedFormRow>
-            <GroupedFormItem label="目的地编码" required>
+            <GroupedFormItem label={t('目的地编码')} required>
               <Input className={groupedFormInputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             </GroupedFormItem>
-            <GroupedFormItem label="所属市" required tip="默认取系统部署市，出库时按此市过滤">
-              <Input className={groupedFormInputClass} value={form.city} onChange={(e) => handleCityChange(e.target.value)} placeholder="如：武汉市" />
+            <GroupedFormItem label={t('所属市')} required tip={t('默认取系统部署市，出库时按此市过滤')}>
+              <Input className={groupedFormInputClass} value={form.city} onChange={(e) => handleCityChange(e.target.value)} placeholder={t('如：武汉市')} />
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="所属区" required tip="根据所属市自动列出可选行政区">
+            <GroupedFormItem label={t('所属区')} required tip={t('根据所属市自动列出可选行政区')}>
               <Select
                 value={form.district || undefined}
                 onValueChange={handleDistrictChange}
@@ -150,7 +156,7 @@ export default function OutboundDestinationForm() {
                 </SelectContent>
               </Select>
             </GroupedFormItem>
-            <GroupedFormItem label="目的地名称" required>
+            <GroupedFormItem label={t('目的地名称')} required>
               <Input
                 className={groupedFormInputClass}
                 value={form.name}
@@ -158,12 +164,30 @@ export default function OutboundDestinationForm() {
                   setNameTouched(true)
                   setForm({ ...form, name: e.target.value })
                 }}
-                placeholder="如：江岸区应急保障局"
+                placeholder={t('如：江岸区应急保障局')}
               />
             </GroupedFormItem>
           </GroupedFormRow>
           <GroupedFormRow>
-            <GroupedFormItem label="排序">
+            <GroupedFormItem label={t('联系人')}>
+              <Input
+                className={groupedFormInputClass}
+                value={form.contact}
+                onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                placeholder={t('选填')}
+              />
+            </GroupedFormItem>
+            <GroupedFormItem label={t('电话')}>
+              <Input
+                className={groupedFormInputClass}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder={t('选填')}
+              />
+            </GroupedFormItem>
+          </GroupedFormRow>
+          <GroupedFormRow>
+            <GroupedFormItem label={t('排序')}>
               <Input
                 type="number"
                 className={groupedFormInputClass}
@@ -171,14 +195,14 @@ export default function OutboundDestinationForm() {
                 onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) || 0 })}
               />
             </GroupedFormItem>
-            <GroupedFormItem label="状态">
+            <GroupedFormItem label={t('状态')}>
               <Select value={form.enabled} onValueChange={(v) => setForm({ ...form, enabled: v })}>
                 <SelectTrigger className={groupedFormSelectTriggerClass}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="true">启用</SelectItem>
-                  <SelectItem value="false">停用</SelectItem>
+                  <SelectItem value="true">{t('启用')}</SelectItem>
+                  <SelectItem value="false">{t('停用')}</SelectItem>
                 </SelectContent>
               </Select>
             </GroupedFormItem>

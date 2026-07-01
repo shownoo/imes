@@ -1,8 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { getStoredUser } from './lib/apollo'
 import Layout from './components/Layout'
+import { OpsMobileGate } from './components/ops-mobile-gate'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import HomeRoute from './pages/HomeRoute'
 import MaterialsIndex from './pages/materials/index'
 import MaterialForm from './pages/materials/material-form'
 import CategoryForm from './pages/materials/category-form'
@@ -29,6 +30,18 @@ import Trace from './pages/Trace'
 import AdminRoutes from './pages/admin'
 import TasksIndex from './pages/tasks/index'
 import PrintPage from './pages/print/index'
+import OpsTodoHub from './pages/ops/mobile/todo-hub'
+import OpsMobileScan from './pages/ops/mobile/scan'
+import OpsMobileMe from './pages/ops/mobile/me'
+import OpsMobileTools from './pages/ops/mobile/tools/index'
+import OpsStocktakeList from './pages/ops/mobile/stocktake/index'
+import OpsStocktakeCreate from './pages/ops/mobile/stocktake/create'
+import OpsStocktakeDetail from './pages/ops/mobile/stocktake/detail'
+import OpsMobileTransfer from './pages/ops/mobile/transfer'
+import OpsMobileExpiry from './pages/ops/mobile/expiry'
+import OpsMobileAlerts from './pages/ops/mobile/alerts'
+import OpsMobileReceived from './pages/ops/mobile/received'
+import OpsMobileShipped from './pages/ops/mobile/shipped'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   return getStoredUser() ? <>{children}</> : <Navigate to="/login" replace />
@@ -47,7 +60,105 @@ export default function App() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<HomeRoute />} />
+        <Route path="ops">
+          <Route
+            index
+            element={
+              <OpsMobileGate>
+                <OpsTodoHub />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="scan"
+            element={
+              <OpsMobileGate>
+                <OpsMobileScan />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="me"
+            element={
+              <OpsMobileGate>
+                <OpsMobileMe />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="tools"
+            element={
+              <OpsMobileGate>
+                <OpsMobileTools />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="stocktake"
+            element={
+              <OpsMobileGate>
+                <OpsStocktakeList />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="stocktake/create"
+            element={
+              <OpsMobileGate>
+                <OpsStocktakeCreate />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="stocktake/:id"
+            element={
+              <OpsMobileGate>
+                <OpsStocktakeDetail />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="transfer"
+            element={
+              <OpsMobileGate>
+                <OpsMobileTransfer />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="expiry"
+            element={
+              <OpsMobileGate>
+                <OpsMobileExpiry />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="alerts"
+            element={
+              <OpsMobileGate>
+                <OpsMobileAlerts />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="received"
+            element={
+              <OpsMobileGate>
+                <OpsMobileReceived />
+              </OpsMobileGate>
+            }
+          />
+          <Route
+            path="shipped"
+            element={
+              <OpsMobileGate>
+                <OpsMobileShipped />
+              </OpsMobileGate>
+            }
+          />
+        </Route>
         <Route path="tasks" element={<TasksIndex />} />
         <Route path="workspace" element={<WorkspaceSettings />} />
         <Route path="materials">

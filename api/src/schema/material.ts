@@ -1,4 +1,6 @@
 import { builder } from '../builder.js'
+import { cached } from '../lib/cache.js'
+import { invalidateMaterialCache, materialListKey } from '../lib/master-cache.js'
 import { containsI } from '../lib/utils.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import {
@@ -32,20 +34,23 @@ builder.queryField('getMaterials', (t) =>
     args: { input: t.arg({ type: PaginationInput, required: false }) },
     resolve: async (_, { input }, ctx) => {
       const { search, take, skip } = input ?? {}
-      const where = search
-        ? { OR: [{ name: containsI(search) }, { code: containsI(search) }] }
-        : {}
-      const [materials, count] = await Promise.all([
-        ctx.prisma.material.findMany({
-          where,
-          take: take ?? 50,
-          skip: skip ?? 0,
-          include: materialListInclude,
-          orderBy: { code: 'asc' },
-        }),
-        ctx.prisma.material.count({ where }),
-      ])
-      return { materials: materials.map(enrichMaterial), count }
+      const queryInput = { search: search ?? null, take: take ?? 50, skip: skip ?? 0 }
+      return cached(materialListKey(queryInput), async () => {
+        const where = search
+          ? { OR: [{ name: containsI(search) }, { code: containsI(search) }] }
+          : {}
+        const [materials, count] = await Promise.all([
+          ctx.prisma.material.findMany({
+            where,
+            take: queryInput.take,
+            skip: queryInput.skip,
+            include: materialListInclude,
+            orderBy: { code: 'asc' },
+          }),
+          ctx.prisma.material.count({ where }),
+        ])
+        return { materials: materials.map(enrichMaterial), count }
+      })
     },
   }),
 )
@@ -119,6 +124,7 @@ builder.mutationField('addMaterial', (t) =>
           before: beforeSnap,
           after: afterSnap,
         })
+        await invalidateMaterialCache()
         return enrichMaterial(enriched)
       }
       const result = await ctx.prisma.material.create({ data: data as never })
@@ -135,6 +141,7 @@ builder.mutationField('addMaterial', (t) =>
         targetLabel: result.code,
         after: snapMaterialForLog(enrichMaterial(enriched)),
       })
+      await invalidateMaterialCache()
       return enrichMaterial(enriched)
     },
   }),
@@ -156,6 +163,7 @@ builder.mutationField('delMaterial', (t) =>
         targetLabel: material.code,
         before: material as unknown as Record<string, unknown>,
       })
+      await invalidateMaterialCache()
       return result
     },
   }),

@@ -278,6 +278,8 @@ export default function MaterialsIndex() {
             { key: 'city', title: '所属市', tip: '目的地归属的地级市' },
             { key: 'district', title: '所属区', tip: '目的地归属的行政区' },
             { key: 'name', title: '名称', tip: '出库单可选目的地，一般为各区应急保障局' },
+            { key: 'contact', title: '联系人', tip: '目的地对接联系人' },
+            { key: 'phone', title: '电话', tip: '联系电话' },
             { key: 'sortOrder', title: '排序', tip: '下拉列表显示顺序，数字越小越靠前' },
             { key: 'enabled', title: '状态', tip: '停用后新建出库单不可选', render: (r) => (
               <Badge variant={r.enabled === false ? 'secondary' : 'success'}>{r.enabled === false ? '停用' : '启用'}</Badge>

@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'compo
 import { Input } from 'components/ui/input'
 import { Label } from 'components/ui/label'
 import { storeAuth, type User } from 'lib/apollo'
+import { useTranslation } from 'react-i18next'
 
 const LOGIN = gql`mutation Login($input: LoginInput!) { login(input: $input) }`
 
 export default function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('123456')
@@ -27,7 +29,7 @@ export default function Login() {
       storeAuth(result.token, result.user)
       navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '登录失败')
+      setError(err instanceof Error ? err.message : t('登录失败'))
     }
   }
 
@@ -38,29 +40,29 @@ export default function Login() {
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary">
             <Shield className="size-7 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-2xl font-bold">应急物资智能管理系统</h1>
-          <p className="mt-1 text-sm text-muted-foreground">应急物资智能管理系统 · IMES</p>
+          <h1 className="font-display text-2xl font-bold">{t('应急物资智能管理系统')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('应急物资智能管理系统 · IMES')}</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>登录</CardTitle>
-            <CardDescription>演示账号 admin / 123456</CardDescription>
+            <CardTitle>{t('登录')}</CardTitle>
+            <CardDescription>{t('演示账号 admin / 123456')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">用户名</Label>
+                <Label htmlFor="username">{t('用户名')}</Label>
                 <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">密码</Label>
+                <Label htmlFor="password">{t('密码')}</Label>
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="size-4 animate-spin" />}
-                登录</Button>
+                {t('登录')}</Button>
             </form>
           </CardContent>
         </Card>

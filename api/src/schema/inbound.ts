@@ -1,4 +1,7 @@
 import { builder } from '../builder.js'
+import { cached } from '../lib/cache.js'
+import { materialIndexKey } from '../lib/master-cache.js'
+import { publishDocumentUpdated } from '../lib/realtime-publish.js'
 import { getInboundOrderForPrint } from '../lib/print-data.js'
 import { parseInboundText } from '../lib/parse-inbound-text.js'
 import { containsI, genOrderNo, genQrCode, addMonths } from '../lib/utils.js'
@@ -98,6 +101,7 @@ builder.queryField('getInboundOrders', (t) =>
     args: {
       type: t.arg.string({ required: false }),
       status: t.arg.string({ required: false }),
+      statuses: t.arg.string({ required: false }),
       warehouseId: t.arg.id({ required: false }),
       orderNo: t.arg.string({ required: false }),
       supplierId: t.arg.id({ required: false }),
@@ -105,10 +109,15 @@ builder.queryField('getInboundOrders', (t) =>
       dateTo: t.arg({ type: 'DateTime', required: false }),
       input: t.arg({ type: PaginationInput, required: false }),
     },
-    resolve: async (_, { type, status, warehouseId, orderNo, supplierId, dateFrom, dateTo, input }, ctx) => {
+    resolve: async (_, { type, status, statuses, warehouseId, orderNo, supplierId, dateFrom, dateTo, input }, ctx) => {
       const where: Record<string, unknown> = {}
       if (type) where.type = type
-      if (status) where.status = status
+      if (statuses) {
+        const list = statuses.split(',').map((s) => s.trim()).filter(Boolean)
+        if (list.length) where.status = { in: list }
+      } else if (status) {
+        where.status = status
+      }
       if (warehouseId) where.warehouseId = warehouseId
       if (orderNo) where.orderNo = containsI(orderNo)
       if (supplierId) where.supplierId = supplierId
@@ -370,6 +379,7 @@ builder.mutationField('approveInboundOrder', (t) =>
         before: { status: formatStatus(order.status) },
         after: { status: formatStatus('RECEIVING') },
       })
+      await publishDocumentUpdated(ctx, 'inbound', input.id, 'approved')
       return result
     },
   }),
@@ -493,6 +503,8 @@ builder.mutationField('receiveInboundLine', (t) =>
         detail: { qrCode, material: line.material.name, qty: input.actualQty },
       })
 
+      await publishDocumentUpdated(ctx, 'inbound', line.orderId, 'receive_line')
+
       return { batch, stockItem: item, qrCode }
     },
   }),
@@ -578,6 +590,7 @@ builder.mutationField('completeInboundOrder', (t) =>
         before: { status: formatStatus(order.status) },
         after: { status: formatStatus('COMPLETED') },
       })
+      await publishDocumentUpdated(ctx, 'inbound', input.id, 'complete')
       return result
     },
   }),
@@ -593,18 +606,20 @@ builder.mutationField('parseInboundDocumentText', (t) =>
       const trimmed = text.trim()
       if (!trimmed) return { rows: [], unmatched: [] }
 
-      const materials = await ctx.prisma.material.findMany({
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          spec: true,
-          model: true,
-          unit: true,
-          manufacturer: true,
-        },
-        orderBy: { code: 'asc' },
-      })
+      const materials = await cached(materialIndexKey(), async () =>
+        ctx.prisma.material.findMany({
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            spec: true,
+            model: true,
+            unit: true,
+            manufacturer: true,
+          },
+          orderBy: { code: 'asc' },
+        }),
+      )
 
       const parsed = parseInboundText(trimmed, materials)
       const rows = parsed.filter((r) => r.materialId && r.expectedQty > 0)

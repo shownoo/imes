@@ -11,6 +11,7 @@ import { MOVEMENT_TYPE_FILTERS } from 'lib/movement-types'
 import { listFilterInputClass } from 'lib/list-index-chrome'
 import { cn } from 'lib/utils'
 import { MovementsTable } from './movements-table'
+import { useTranslation } from 'react-i18next'
 
 const GET_MOVEMENTS = gql`
   query GetMovements($type: String, $input: PaginationInput) {
@@ -19,6 +20,7 @@ const GET_MOVEMENTS = gql`
 `
 
 export function MovementsSection() {
+  const { t } = useTranslation()
   const [typeFilter, setTypeFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -60,7 +62,7 @@ export function MovementsSection() {
         <DebounceInput
           key="movements-search"
           className={cn(listFilterInputClass, 'pl-9')}
-          placeholder="搜索物资、二维码、操作人、备注..."
+          placeholder={t('搜索物资、二维码、操作人、备注...')}
           defaultValue={search}
           debounceTime={500}
           onSearch={setSearch}

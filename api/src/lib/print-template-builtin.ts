@@ -71,7 +71,7 @@ export const PRINT_TEMPLATE_HTML: Record<PrintTemplateKey, { html: string }> = {
 <p><b>状态: </b>${v('状态', 'm-status')}</p>
 <hr/>
 <p><b>用途: </b>${v('用途', 'm-purpose')}</p>
-<p><b>目的地: </b>${v('目的地', 'm-destination')}<span>        </span><b>领用人: </b>${v('领用人', 'm-recipient')}</p>
+<p><b>领用人: </b>${v('领用人', 'm-destination')}</p>
 <p><b>制单人: </b>${v('制单人', 'm-createdBy.name')}<span>        </span><b>审核人: </b>${v('审核人', 'm-approvedBy.name')}<span>        </span><b>审核日期: </b>${v('审核日期', 'm-approvedAt')}</p>
 <p></p>
 <table style="border-collapse:collapse;width:100%;table-layout:fixed;">

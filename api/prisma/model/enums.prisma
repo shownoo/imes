@@ -64,3 +64,9 @@ enum ZoneType {
   GENERAL
   TEMPERATURE
 }
+
+/// 盘点任务状态
+enum StocktakeStatus {
+  IN_PROGRESS
+  COMPLETED
+}

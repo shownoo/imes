@@ -1,4 +1,11 @@
 import { builder } from '../builder.js'
+import { cached } from '../lib/cache.js'
+import {
+  invalidateShelfCache,
+  invalidateWarehouseCache,
+  shelfListKey,
+  warehouseAllKey,
+} from '../lib/master-cache.js'
 import { writeSystemLog } from '../lib/system-log.js'
 import { IdInput, PaginationInput } from './input-types.js'
 
@@ -31,11 +38,13 @@ builder.queryField('getWarehouses', (t) =>
     type: 'JSON',
     authScopes: { authenticated: true },
     resolve: async (_, __, ctx) => {
-      const warehouses = await ctx.prisma.warehouse.findMany({
-        include: { shelves: true },
-        orderBy: { code: 'asc' },
+      return cached(warehouseAllKey(), async () => {
+        const warehouses = await ctx.prisma.warehouse.findMany({
+          include: { shelves: true },
+          orderBy: { code: 'asc' },
+        })
+        return { warehouses, count: warehouses.length }
       })
-      return { warehouses, count: warehouses.length }
     },
   }),
 )
@@ -49,18 +58,25 @@ builder.queryField('getShelves', (t) =>
       input: t.arg({ type: PaginationInput, required: false }),
     },
     resolve: async (_, { warehouseId, input }, ctx) => {
-      const where = warehouseId ? { warehouseId } : {}
-      const [shelves, count] = await Promise.all([
-        ctx.prisma.shelf.findMany({
-          where,
-          take: input?.take ?? 100,
-          skip: input?.skip ?? 0,
-          include: { warehouse: true, _count: { select: { stockItems: true } } },
-          orderBy: { code: 'asc' },
-        }),
-        ctx.prisma.shelf.count({ where }),
-      ])
-      return { shelves, count }
+      const queryInput = {
+        warehouseId: warehouseId ?? null,
+        take: input?.take ?? 100,
+        skip: input?.skip ?? 0,
+      }
+      return cached(shelfListKey(queryInput), async () => {
+        const where = warehouseId ? { warehouseId } : {}
+        const [shelves, count] = await Promise.all([
+          ctx.prisma.shelf.findMany({
+            where,
+            take: queryInput.take,
+            skip: queryInput.skip,
+            include: { warehouse: true, _count: { select: { stockItems: true } } },
+            orderBy: { code: 'asc' },
+          }),
+          ctx.prisma.shelf.count({ where }),
+        ])
+        return { shelves, count }
+      })
     },
   }),
 )
@@ -84,6 +100,7 @@ builder.mutationField('addWarehouse', (t) =>
           before: existing as unknown as Record<string, unknown>,
           after: result as unknown as Record<string, unknown>,
         })
+        await invalidateWarehouseCache()
         return result
       }
       const result = await ctx.prisma.warehouse.create({ data: data as never })
@@ -95,6 +112,7 @@ builder.mutationField('addWarehouse', (t) =>
         targetLabel: result.code,
         after: result as unknown as Record<string, unknown>,
       })
+      await invalidateWarehouseCache()
       return result
     },
   }),
@@ -120,6 +138,7 @@ builder.mutationField('addShelf', (t) =>
           before: existing as unknown as Record<string, unknown>,
           after: result as unknown as Record<string, unknown>,
         })
+        await invalidateShelfCache()
         return result
       }
       const result = await ctx.prisma.shelf.create({ data: { ...data, qrCode } as never })
@@ -131,6 +150,7 @@ builder.mutationField('addShelf', (t) =>
         targetLabel: result.code,
         after: result as unknown as Record<string, unknown>,
       })
+      await invalidateShelfCache()
       return result
     },
   }),
@@ -152,6 +172,7 @@ builder.mutationField('delShelf', (t) =>
         targetLabel: shelf.code,
         before: shelf as unknown as Record<string, unknown>,
       })
+      await invalidateShelfCache()
       return result
     },
   }),
@@ -173,6 +194,7 @@ builder.mutationField('delWarehouse', (t) =>
         targetLabel: warehouse.code,
         before: warehouse as unknown as Record<string, unknown>,
       })
+      await invalidateWarehouseCache()
       return result
     },
   }),
